@@ -1,0 +1,486 @@
+.carrito{
+    max-width:1300px;
+    width:95%;
+    margin:auto;
+
+    padding:35px 0 70px;
+}
+
+.carrito-back{
+    margin-bottom:20px;
+}
+
+.carrito-volver{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+
+    color:var(--primary);
+    font-size:16px;
+    font-weight:600;
+
+    transition:.3s;
+}
+
+.carrito-volver:hover{
+    color:var(--gold);
+}
+
+.carrito-titulo{
+    color:var(--primary);
+    font-size:34px;
+
+    margin-bottom:25px;
+}
+
+/* =========================
+   VACÍO
+========================= */
+
+.carrito-vacio{
+    text-align:center;
+
+    padding:70px 20px;
+
+    background:#fff;
+
+    border-radius:20px;
+
+    box-shadow:var(--shadow);
+}
+
+.carrito-vacio p{
+    color:#888;
+    font-size:18px;
+
+    margin-bottom:20px;
+}
+
+.carrito-vacio-btn{
+    display:inline-block;
+
+    padding:14px 38px;
+
+    border-radius:30px;
+
+    background:var(--primary);
+    color:#fff;
+
+    font-size:16px;
+    font-weight:600;
+
+    transition:.3s;
+}
+
+.carrito-vacio-btn:hover{
+    background:var(--gold);
+    color:#3a2a05;
+}
+
+/* =========================
+   GRID
+========================= */
+
+.carrito-grid{
+    display:grid;
+    grid-template-columns:1fr 340px;
+
+    gap:25px;
+
+    align-items:start;
+}
+
+/* =========================
+   LISTA
+========================= */
+
+.carrito-lista{
+    display:flex;
+    flex-direction:column;
+
+    gap:15px;
+}
+
+.carrito-item{
+    display:flex;
+    align-items:center;
+
+    gap:18px;
+
+    background:#fff;
+
+    padding:15px;
+
+    border-radius:16px;
+
+    box-shadow:var(--shadow);
+}
+
+.carrito-item-img img{
+    width:90px;
+    height:90px;
+
+    object-fit:cover;
+
+    border-radius:12px;
+}
+
+.carrito-item-img .sin-imagen{
+    width:90px;
+    height:90px;
+
+    background:#f0f0f0;
+
+    color:#aaa;
+
+    border-radius:12px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.carrito-item-info{
+    flex:1;
+}
+
+.carrito-item-nombre{
+    color:var(--text);
+    font-weight:600;
+
+    font-size:17px;
+
+    margin-bottom:3px;
+}
+
+.carrito-item-precio{
+    color:var(--primary);
+    font-weight:600;
+
+    font-size:16px;
+
+    margin-bottom:10px;
+}
+
+.carrito-item-controls{
+    display:flex;
+    align-items:center;
+
+    gap:12px;
+}
+
+.carrito-cantidad{
+    display:flex;
+    align-items:center;
+
+    border:2px solid #eee;
+    border-radius:30px;
+
+    overflow:hidden;
+}
+
+.carrito-cantidad button{
+    width:34px;
+    height:34px;
+
+    border:none;
+
+    background:transparent;
+
+    color:var(--primary);
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    cursor:pointer;
+
+    transition:.3s;
+}
+
+.carrito-cantidad button:hover{
+    background:#f8ecef;
+}
+
+.carrito-cantidad span{
+    min-width:30px;
+
+    text-align:center;
+
+    font-size:15px;
+    font-weight:600;
+}
+
+.carrito-item-eliminar{
+    border:none;
+
+    background:transparent;
+
+    color:#ccc;
+
+    font-size:16px;
+
+    cursor:pointer;
+
+    transition:.3s;
+}
+
+.carrito-item-eliminar:hover{
+    color:#d33;
+}
+
+.carrito-item-subtotal{
+    font-size:18px;
+    font-weight:700;
+
+    color:var(--text);
+
+    flex:none;
+}
+
+/* =========================
+   RESUMEN
+========================= */
+
+.carrito-resumen{
+    background:#fff;
+
+    padding:25px;
+
+    border-radius:16px;
+
+    box-shadow:var(--shadow);
+
+    position:sticky;
+    top:110px;
+}
+
+.carrito-resumen h3{
+    color:var(--primary);
+    font-size:22px;
+
+    margin-bottom:18px;
+}
+
+.carrito-resumen-linea{
+    display:flex;
+    justify-content:space-between;
+
+    color:#666;
+    font-size:16px;
+
+    margin-bottom:10px;
+}
+
+.carrito-resumen-total{
+    display:flex;
+    justify-content:space-between;
+
+    font-size:21px;
+    font-weight:700;
+
+    color:var(--text);
+
+    padding-top:14px;
+    margin-bottom:20px;
+
+    border-top:2px solid #f3f3f3;
+}
+
+.carrito-resumen-total span:last-child{
+    color:var(--primary);
+}
+
+.carrito-retiro{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    gap:8px;
+
+    margin-bottom:18px;
+
+    padding:12px 14px;
+
+    border-radius:12px;
+
+    background:var(--background);
+
+    border:1px solid #EDE2CE;
+
+    color:#8A7A63;
+    font-size:14px;
+    font-weight:500;
+    line-height:20px;
+}
+
+.carrito-retiro svg{
+    color:var(--gold-dark);
+    flex:none;
+}
+
+.carrito-datos{
+    display:flex;
+    flex-direction:column;
+
+    gap:10px;
+
+    margin-bottom:18px;
+}.carrito-datos input{
+    padding:14px 18px;
+
+    border:2px solid #eee;
+    border-radius:30px;
+
+    font-size:15px;
+
+    outline:none;
+
+    transition:.3s;
+}
+
+.carrito-datos input:focus{
+    border-color:var(--gold);
+}
+
+.carrito-error{
+    color:#d33;
+    font-size:13px;
+
+    margin-bottom:12px;
+
+    text-align:center;
+}
+
+.carrito-ordenar{
+    width:100%;
+
+    padding:16px;
+
+    border:none;
+    border-radius:30px;
+
+    background:var(--primary);
+    color:#fff;
+
+    font-size:17px;
+    font-weight:600;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+
+    cursor:pointer;
+
+    box-shadow:0 8px 20px rgba(123,16,35,.35);
+
+    transition:.3s;
+}
+
+.carrito-ordenar:hover{
+    background:var(--gold);
+    color:#3a2a05;
+    transform:translateY(-3px);
+}
+
+.carrito-ordenar:disabled{
+    opacity:.6;
+
+    cursor:default;
+
+    transform:none;
+}
+
+.carrito-seguir{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    width:100%;
+
+    margin-top:12px;
+
+    padding:14px;
+
+    border:2px solid var(--primary);
+    border-radius:30px;
+
+    background:transparent;
+    color:var(--primary);
+
+    font-size:16px;
+    font-weight:600;
+
+    transition:.3s;
+}
+
+.carrito-seguir:hover{
+    background:var(--primary);
+    color:#fff;
+}
+
+.carrito-ayuda{
+    margin-top:14px;
+
+    color:#999;
+    font-size:13px;
+    line-height:19px;
+
+    text-align:center;
+}
+
+/* =========================
+   ÉXITO
+========================= */
+
+.carrito-exito{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
+
+.carrito-exito-icono{
+    color:#2d8a4e;
+    font-size:60px;
+
+    margin-bottom:15px;
+}
+
+.carrito-exito h2{
+    color:var(--primary);
+    font-size:24px;
+
+    margin-bottom:10px;
+}
+
+.carrito-exito p{
+    color:#666;
+    font-size:15px;
+
+    max-width:340px;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:820px){
+    .carrito-grid{
+        grid-template-columns:1fr;
+    }
+
+    .carrito-resumen{
+        position:static;
+    }
+
+    .carrito-item{
+        flex-wrap:wrap;
+    }
+
+    .carrito-item-subtotal{
+        width:100%;
+
+        text-align:right;
+    }
+}

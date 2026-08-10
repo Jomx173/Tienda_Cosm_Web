@@ -1,0 +1,274 @@
+/* ===========================
+   GOOGLE FONTS
+=========================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+
+/* ===========================
+   VARIABLES
+=========================== */
+
+:root{
+
+    --primary:#6B1420;
+    --primary-dark:#5A0F1A;
+    --secondary:#8B1E2D;
+    --gold:#D9AE55;
+    --gold-dark:#B4863A;
+
+    --background:#FAF7F1;
+
+    --white:#FFFFFF;
+
+    --gray:#F3F3F3;
+
+    --text:#3A1F24;
+
+    --shadow:0 8px 20px rgba(0,0,0,.08);
+
+    --radius:12px;
+
+}
+
+/* ===========================
+   RESET
+=========================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+
+    scroll-behavior:smooth;
+
+}
+
+body{
+
+    font-family:'Poppins',sans-serif;
+
+    font-size:17px;
+
+    background:var(--background);
+
+    color:var(--text);
+
+}
+
+a{
+
+    text-decoration:none;
+
+    color:inherit;
+
+}
+
+ul{
+
+    list-style:none;
+
+}
+
+img{
+
+    width:100%;
+
+    display:block;
+
+}
+
+button{
+
+    cursor:pointer;
+
+    border:none;
+
+    outline:none;
+
+    font-family:'Poppins',sans-serif;
+
+}
+
+/* ===========================
+   CONTAINER
+=========================== */
+
+.container{
+
+    width:90%;
+
+    max-width:1400px;
+
+    margin:auto;
+
+}
+
+/* ===========================
+   TITULOS
+=========================== */
+
+h1,h2,h3,h4{
+
+    font-family:'Playfair Display',serif;
+
+}
+
+/* ===========================
+   BOTON PRINCIPAL
+=========================== */
+
+.btn-primary{
+
+    background:var(--primary);
+
+    color:white;
+
+    padding:14px 30px;
+
+    border-radius:50px;
+
+    transition:.3s;
+
+}
+
+.btn-primary:hover{
+
+    background:var(--gold);
+
+    color:black;
+
+}
+
+/* ===========================
+   SECTION
+=========================== */
+
+section{
+
+    padding:80px 0;
+
+}
+
+/* ===========================
+   CABECERA DE SECCIÓN
+=========================== */
+
+.section-header{
+
+    text-align:center;
+
+    max-width:600px;
+
+    margin:0 auto 50px;
+
+}
+
+.section-header .section-eyebrow{
+
+    color:var(--gold);
+
+    font-size:14px;
+
+    font-weight:600;
+
+    letter-spacing:3px;
+
+    text-transform:uppercase;
+
+    display:inline-block;
+
+    margin-bottom:10px;
+
+}
+
+.section-header h2{
+
+    color:var(--primary);
+
+    font-size:46px;
+
+    margin-bottom:12px;
+
+}
+
+.section-header p{
+
+    color:#777;
+
+    font-size:18px;
+
+    line-height:28px;
+
+}
+
+/* ===========================
+   GRID DE PRODUCTOS
+=========================== */
+
+.products-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(4,1fr);
+
+    gap:30px;
+
+    align-items:stretch;
+
+}
+
+@media(max-width:992px){
+
+    .products-grid{
+
+        grid-template-columns:repeat(2,1fr);
+
+    }
+
+}
+
+@media(max-width:600px){
+
+    .products-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+/* ===========================
+   BOTÓN SECUNDARIO
+=========================== */
+
+.btn-outline{
+
+    display:inline-block;
+
+    margin-top:45px;
+
+    padding:13px 34px;
+
+    border:2px solid var(--primary);
+
+    border-radius:30px;
+
+    color:var(--primary);
+
+    font-size:15px;
+    font-weight:600;
+
+    transition:.3s;
+
+}
+
+.btn-outline:hover{
+
+    background:var(--primary);
+
+    color:#fff;
+
+}

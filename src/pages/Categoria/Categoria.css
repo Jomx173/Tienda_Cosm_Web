@@ -1,0 +1,85 @@
+.categoria{
+    padding-top:20px;
+}
+
+/* =========================
+   ESTADOS
+========================= */
+
+.categoria-cargando{
+    text-align:center;
+
+    padding:80px 20px;
+
+    color:#888;
+    font-size:16px;
+}
+
+.categoria-noencontrada{
+    text-align:center;
+
+    padding:90px 20px 100px;
+
+    color:#888;
+    font-size:16px;
+}
+
+.categoria-noencontrada-icono{
+    width:86px;
+    height:86px;
+
+    margin:0 auto 22px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius:50%;
+
+    background:var(--background);
+
+    border:2px solid #EDE2CE;
+
+    color:var(--gold-dark);
+    font-size:34px;
+}
+
+.categoria-noencontrada h1{
+    color:var(--primary);
+    font-size:34px;
+
+    margin-bottom:12px;
+}
+
+.categoria-noencontrada p{
+    color:#777;
+
+    margin-bottom:26px;
+}
+
+.categoria-noencontrada strong{
+    color:var(--primary);
+}
+
+.categoria-volver{
+    display:inline-block;
+
+    padding:14px 36px;
+
+    border-radius:30px;
+
+    background:var(--primary);
+    color:#fff;
+
+    font-size:16px;
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.3s;
+}
+
+.categoria-volver:hover{
+    background:var(--gold);
+    color:#3a2a05;
+}

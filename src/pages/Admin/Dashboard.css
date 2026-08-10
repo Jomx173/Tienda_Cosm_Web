@@ -1,0 +1,582 @@
+/* =========================
+   DASHBOARD
+   Paleta: vino #6B1420→#4A0E17 / dorado #D9AE55 / crema #FBF8F4
+   Verde éxito #3F7A5D / Rojo alerta #C9542E
+========================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+
+.dashboard{
+    background:#FBF8F4;
+}
+
+.dashboard,
+.dashboard button,
+.dashboard input{
+    font-family:'Inter',sans-serif;
+}
+
+.dashboard h2,
+.dashboard h3,
+.dashboard .dash-card-valor{
+    font-family:'Playfair Display',serif;
+}
+
+/* =========================
+   TARJETAS DE ESTADÍSTICAS (7)
+========================= */
+
+.dash-stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+
+    gap:16px;
+
+    margin-bottom:24px;
+}
+
+.dash-card{
+    background:#FFFFFF;
+    border:1px solid #F0E6DD;
+    border-radius:16px;
+
+    box-shadow:0 4px 14px rgba(74,14,23,.05);
+
+    padding:18px 18px 16px;
+
+    display:flex;
+    flex-direction:column;
+
+    gap:6px;
+
+    min-width:0;
+}
+
+.dash-card-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    gap:10px;
+
+    margin-bottom:8px;
+}
+
+.dash-card-icono{
+    width:38px;
+    height:38px;
+
+    border-radius:12px;
+
+    background:linear-gradient(135deg,#6B1420,#4A0E17);
+    color:#D9AE55;
+
+    font-size:16px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    flex:none;
+}
+
+.dash-variacion{
+    display:inline-flex;
+    align-items:center;
+
+    gap:4px;
+
+    font-size:12px;
+    font-weight:700;
+
+    padding:4px 9px;
+
+    border-radius:999px;
+
+    white-space:nowrap;
+}
+
+.dash-variacion svg{
+    font-size:11px;
+}
+
+.dash-variacion.buena{
+    background:#E7F0EB;
+    color:#3F7A5D;
+}
+
+.dash-variacion.mala{
+    background:#FDEEE9;
+    color:#C9542E;
+}
+
+.dash-card-etiqueta{
+    color:#8A7A63;
+    font-size:11px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:1px;
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.dash-card-valor{
+    color:#6B1420;
+    font-size:25px;
+    font-weight:700;
+
+    line-height:1.1;
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.dash-card-link{
+    align-self:flex-start;
+
+    border:none;
+
+    background:transparent;
+
+    font-size:12px;
+    font-weight:600;
+
+    padding:2px 0;
+
+    cursor:pointer;
+
+    transition:.2s;
+}
+
+.dash-card-link.dorado{
+    color:#B4863A;
+}
+
+.dash-card-link.dorado:hover{
+    color:#6B1420;
+}
+
+.dash-card-link.verde{
+    color:#3F7A5D;
+}
+
+.dash-card-link.verde:hover{
+    color:#6B1420;
+}
+
+.dash-card-link.rojo{
+    color:#C9542E;
+}
+
+.dash-card-link.rojo:hover{
+    color:#6B1420;
+}
+
+/* =========================
+   SEGUNDA FILA (4 COLUMNAS)
+========================= */
+
+.dash-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);
+
+    gap:16px;
+}
+
+.dash-panel{
+    background:#FFFFFF;
+    border:1px solid #F0E6DD;
+    border-radius:16px;
+
+    box-shadow:0 4px 14px rgba(74,14,23,.05);
+
+    padding:20px;
+
+    min-width:0;
+
+    max-width:100%;
+
+    overflow:hidden;
+
+    box-sizing:border-box;
+
+    display:flex;
+    flex-direction:column;
+}
+
+.dash-panel-grafica{
+    grid-column:span 1;
+}
+
+.dash-seccion-titulo{
+    color:#3A1F24;
+    font-size:17px;
+    font-weight:700;
+
+    margin-bottom:16px;
+}
+
+.dash-subtitulo{
+    color:#3A1F24;
+    font-size:14px;
+    font-weight:700;
+
+    margin:20px 0 10px;
+
+    padding-top:16px;
+
+    border-top:1px solid #F0E6DD;
+}
+
+/* ---- Gráfica ---- */
+
+.dash-svg{
+    width:100%;
+    height:auto;
+
+    display:block;
+}
+
+.dash-svg-eje{
+    font-family:'Inter',sans-serif;
+    font-size:10px;
+    fill:#B5A794;
+}
+
+.dash-svg-etiqueta{
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    fill:#8A7A63;
+}
+
+.dash-vacio{
+    color:#8A7A63;
+    font-size:14px;
+
+    text-align:center;
+
+    padding:40px 0;
+}
+
+/* ---- Listas (top vendidos / stock bajo) ---- */
+
+.dash-lista{
+    list-style:none;
+
+    margin:0;
+    padding:0;
+
+    display:flex;
+    flex-direction:column;
+
+    gap:13px;
+}
+
+.dash-lista-item{
+    display:flex;
+    align-items:center;
+
+    gap:11px;
+
+    min-width:0;
+}
+
+.dash-posicion{
+    width:24px;
+    height:24px;
+
+    flex:none;
+
+    border-radius:50%;
+
+    background:#F2E4C4;
+    color:#8A6A1F;
+
+    font-size:12px;
+    font-weight:700;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.dash-mini-img{
+    width:38px;
+    height:38px;
+
+    flex:none;
+
+    border-radius:10px;
+
+    object-fit:cover;
+}
+
+.dash-mini-sin{
+    background:#FBF8F4;
+    border:1px solid #F0E6DD;
+
+    color:#D9AE55;
+
+    font-size:15px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.dash-lista-info{
+    display:flex;
+    flex-direction:column;
+
+    gap:2px;
+
+    min-width:0;
+
+    flex:1;
+}
+
+.dash-lista-nombre{
+    color:#3A1F24;
+    font-size:13px;
+    font-weight:600;
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.dash-lista-sub{
+    color:#8A7A63;
+    font-size:11px;
+}
+
+.dash-stock-badge{
+    display:inline-block;
+
+    align-self:flex-start;
+
+    padding:3px 10px;
+
+    border-radius:999px;
+
+    background:#FDF3E3;
+    color:#B4863A;
+
+    font-size:11px;
+    font-weight:700;
+}
+
+.dash-stock-badge.critico{
+    background:#FDEEE9;
+    color:#C9542E;
+}
+
+.dash-stock-alerta{
+    color:#C9542E;
+    font-size:16px;
+
+    flex:none;
+}
+
+.dash-ver-mas{
+    margin-top:auto;
+
+    align-self:flex-start;
+
+    border:none;
+
+    background:transparent;
+
+    color:#6B1420;
+
+    font-size:12px;
+    font-weight:700;
+
+    padding:10px 0 0;
+
+    cursor:pointer;
+
+    transition:.2s;
+}
+
+.dash-ver-mas:hover{
+    color:#D9AE55;
+}
+
+/* ---- Dona + leyenda ---- */
+
+.dash-dona{
+    display:flex;
+    align-items:center;
+
+    gap:18px;
+}
+
+.dash-dona-svg{
+    width:120px;
+    height:120px;
+
+    flex:none;
+}
+
+.dash-dona-total{
+    font-family:'Inter',sans-serif;
+    font-size:22px;
+    font-weight:700;
+    fill:#6B1420;
+}
+
+.dash-dona-sub{
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    fill:#8A7A63;
+}
+
+.dash-leyenda{
+    display:flex;
+    flex-direction:column;
+
+    gap:9px;
+
+    flex:1;
+}
+
+.dash-leyenda-item{
+    display:flex;
+    align-items:center;
+
+    gap:8px;
+
+    font-size:12px;
+}
+
+.dash-leyenda-color{
+    width:12px;
+    height:12px;
+
+    border-radius:4px;
+
+    flex:none;
+}
+
+.dash-leyenda-nombre{
+    color:#3A1F24;
+    font-weight:600;
+
+    flex:1;
+}
+
+.dash-leyenda-porc{
+    color:#8A7A63;
+    font-weight:700;
+}
+
+/* ---- Actividad reciente ---- */
+
+.dash-actividad{
+    list-style:none;
+
+    margin:0;
+    padding:0;
+
+    display:flex;
+    flex-direction:column;
+
+    gap:12px;
+}
+
+.dash-actividad-item{
+    display:flex;
+    align-items:flex-start;
+
+    gap:10px;
+}
+
+.dash-actividad-punto{
+    width:8px;
+    height:8px;
+
+    flex:none;
+
+    border-radius:50%;
+
+    background:#D9AE55;
+
+    margin-top:5px;
+}
+
+.dash-actividad-info{
+    display:flex;
+    flex-direction:column;
+
+    gap:2px;
+
+    min-width:0;
+}
+
+.dash-actividad-texto{
+    color:#3A1F24;
+    font-size:12px;
+
+    line-height:1.35;
+}
+
+.dash-actividad-tiempo{
+    color:#8A7A63;
+    font-size:11px;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:1400px){
+    .dash-grid{
+        grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    }
+
+    .dash-panel-grafica{
+        grid-column:span 1;
+    }
+}
+
+@media(max-width:1200px){
+    .dash-stats{
+        grid-template-columns:repeat(3,1fr);
+    }
+}
+
+@media(max-width:768px){
+    .dash-stats{
+        grid-template-columns:repeat(2,1fr);
+    }
+}
+
+@media(max-width:576px){
+    .dash-stats{
+        grid-template-columns:repeat(2,1fr);
+
+        gap:12px;
+    }
+
+    .dash-card{
+        padding:14px;
+    }
+
+    .dash-card-valor{
+        font-size:20px;
+    }
+
+    .dash-grid{
+        grid-template-columns:minmax(0,1fr);
+    }
+
+    .dash-dona{
+        flex-direction:column;
+        align-items:center;
+    }
+}
