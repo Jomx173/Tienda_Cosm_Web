@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 
@@ -71,12 +71,12 @@ import "./Admin.css";
 const MENU = [
     { id: "dashboard", etiqueta: "Dashboard", icono: FaTachometerAlt, ruta: "/admin/dashboard" },
     { id: "productos", etiqueta: "Productos", icono: FaBoxOpen, ruta: "/admin/productos" },
-    { id: "categorias", etiqueta: "CategorÃ­as", icono: FaTags, ruta: "/admin/categorias" },
+    { id: "categorias", etiqueta: "Categorías", icono: FaTags, ruta: "/admin/categorias" },
     { id: "ofertas", etiqueta: "Ofertas y Descuentos", icono: FaPercent, ruta: "/admin/ofertas" },
     { id: "pedidos", etiqueta: "Pedidos", icono: FaShoppingBag, ruta: "/admin/pedidos" },
-    { id: "carrusel", etiqueta: "ImÃ¡genes/Banners", icono: FaImages, ruta: "/admin/imagenes" },
+    { id: "carrusel", etiqueta: "Imágenes/Banners", icono: FaImages, ruta: "/admin/imagenes" },
     { id: "reportes", etiqueta: "Reportes", icono: FaChartBar, ruta: "/admin/reportes" },
-    { id: "configuracion", etiqueta: "ConfiguraciÃ³n", icono: FaCog, ruta: "/admin/configuracion" },
+    { id: "configuracion", etiqueta: "Configuración", icono: FaCog, ruta: "/admin/configuracion" },
 ];
 
 const RUTA_POR_ID: Record<string, string> = Object.fromEntries(MENU.map((m) => [m.id, m.ruta]));
@@ -96,12 +96,12 @@ const ID_POR_RUTA: Record<string, string> = {
 const TITULOS_SECCION: Record<string, string> = {
     dashboard: "Dashboard",
     productos: "Productos",
-    categorias: "CategorÃ­as",
+    categorias: "Categorías",
     ofertas: "Ofertas y Descuentos",
     pedidos: "Pedidos",
-    carrusel: "ImÃ¡genes / Banners",
+    carrusel: "Imágenes / Banners",
     reportes: "Reportes",
-    configuracion: "ConfiguraciÃ³n",
+    configuracion: "Configuración",
 };
 
 const STOCK_MINIMO = 5;
@@ -391,7 +391,7 @@ function Admin() {
         };
     }, [autenticado]);
 
-    // Rastrear pedidos nuevos: al cargar, registra el Ãºltimo id; luego avisa al detectar uno nuevo
+    // Rastrear pedidos nuevos: al cargar, registra el último id; luego avisa al detectar uno nuevo
     useEffect(() => {
         if (!autenticado) return;
 
@@ -420,17 +420,17 @@ function Admin() {
 
                     reproducirSonido();
                     mostrarNotificacion(
-                        "Nuevo pedido en MD ðŸ›ï¸",
+                        "Nuevo pedido en MD 🛍️",
                         `${numeroNuevo} de ${nuevos[0].nombre_cliente || "un cliente"} por ${formatearPrecio(nuevos[0].total)}`
                     );
 
                     Swal.fire({
                         icon: "info",
-                        title: "Â¡Nuevo pedido! ðŸ›ï¸",
-                        html: `${nuevos.length} pedido${nuevos.length > 1 ? "s" : ""} nuevo${nuevos.length > 1 ? "s" : ""} recibido${nuevos.length > 1 ? "s" : ""}.<br><br><strong>${numeroNuevo}</strong> â€” ${nuevos[0].nombre_cliente || "Cliente"} â€” ${formatearPrecio(nuevos[0].total)}`,
+                        title: "¡Nuevo pedido! 🛍️",
+                        html: `${nuevos.length} pedido${nuevos.length > 1 ? "s" : ""} nuevo${nuevos.length > 1 ? "s" : ""} recibido${nuevos.length > 1 ? "s" : ""}.<br><br><strong>${numeroNuevo}</strong> — ${nuevos[0].nombre_cliente || "Cliente"} — ${formatearPrecio(nuevos[0].total)}`,
                         confirmButtonText: "Ver pedidos",
                         showCancelButton: true,
-                        cancelButtonText: "DespuÃ©s",
+                        cancelButtonText: "Después",
                         confirmButtonColor: "#7B1023",
                     }).then((resultado) => {
                         if (resultado.isConfirmed) {
@@ -588,9 +588,9 @@ function Admin() {
                 const continuar = await Swal.fire({
                     icon: "warning",
                     title: "Posible producto duplicado",
-                    html: `âš ï¸ Ya existe un producto similar: <strong>'${duplicado.nombre}'</strong> (${duplicado.categoria?.nombre || duplicado.categoria || ""}${duplicado.subcategoria ? ` / ${duplicado.subcategoria}` : ""}).<br><br>Â¿Quieres continuar de todas formas?`,
+                    html: `⚠️ Ya existe un producto similar: <strong>'${duplicado.nombre}'</strong> (${duplicado.categoria?.nombre || duplicado.categoria || ""}${duplicado.subcategoria ? ` / ${duplicado.subcategoria}` : ""}).<br><br>¿Quieres continuar de todas formas?`,
                     showCancelButton: true,
-                    confirmButtonText: "SÃ­, crear de todas formas",
+                    confirmButtonText: "Sí, crear de todas formas",
                     cancelButtonText: "Cancelar y revisar",
                     confirmButtonColor: "#7B1023",
                     cancelButtonColor: "#8A7A63",
@@ -641,8 +641,8 @@ function Admin() {
 
     const handleEliminar = async (producto: Producto) => {
         const confirmacion = await Swal.fire({
-            title: "Â¿Eliminar producto?",
-            text: `Â¿Seguro que quieres eliminar "${producto.nombre}"? Esta acciÃ³n no se puede deshacer.`,
+            title: "¿Eliminar producto?",
+            text: `¿Seguro que quieres eliminar "${producto.nombre}"? Esta acción no se puede deshacer.`,
             icon: "warning",
             showCancelButton: true,
             confirmButtonText: "Eliminar",
@@ -664,7 +664,7 @@ function Admin() {
         }
     };
 
-    // ------- CategorÃ­as -------
+    // ------- Categorías -------
 
     const abrirNuevaCategoria = () => {
         setEditandoCat(null);
@@ -717,10 +717,10 @@ function Admin() {
 
             if (editandoCat) {
                 await actualizarCategoria(editandoCat.id_categoria, datos);
-                toastExito("CategorÃ­a actualizada");
+                toastExito("Categoría actualizada");
             } else {
                 await crearCategoria(datos);
-                toastExito("CategorÃ­a creada");
+                toastExito("Categoría creada");
             }
 
             cancelarCatForm();
@@ -729,7 +729,7 @@ function Admin() {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const axiosError = err as any;
             cerrarSesionSiNoAutorizado(err);
-            toastError(axiosError?.response?.data?.mensaje || "No se pudo guardar la categorÃ­a. Intenta de nuevo.");
+            toastError(axiosError?.response?.data?.mensaje || "No se pudo guardar la categoría. Intenta de nuevo.");
         } finally {
             setCargando(false);
         }
@@ -737,11 +737,11 @@ function Admin() {
 
     const handleEliminarCategoria = async (categoria: Categoria) => {
         const confirmacion = await Swal.fire({
-            title: "Â¿Eliminar categorÃ­a?",
-            text: `${categoria.nombre}. Los productos seguirÃ¡n existiendo.`,
+            title: "¿Eliminar categoría?",
+            text: `${categoria.nombre}. Los productos seguirán existiendo.`,
             icon: "warning",
             showCancelButton: true,
-            confirmButtonText: "SÃ­, eliminar",
+            confirmButtonText: "Sí, eliminar",
             cancelButtonText: "Cancelar",
             confirmButtonColor: "#d33",
         });
@@ -750,13 +750,13 @@ function Admin() {
 
         try {
             await eliminarCategoria(categoria.id_categoria);
-            toastExito("CategorÃ­a eliminada");
+            toastExito("Categoría eliminada");
             await cargarDatos();
         } catch (err) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const axiosError = err as any;
             cerrarSesionSiNoAutorizado(err);
-            toastError(axiosError?.response?.data?.mensaje || "No se pudo eliminar la categorÃ­a");
+            toastError(axiosError?.response?.data?.mensaje || "No se pudo eliminar la categoría");
         }
     };
 
@@ -861,11 +861,11 @@ function Admin() {
 
     const handleEliminarBanner = async (banner: Banner) => {
         const confirmacion = await Swal.fire({
-            title: "Â¿Eliminar banner?",
-            html: `Â¿Seguro que quieres eliminar "<strong>${banner.titulo}</strong>"? Esta acciÃ³n no se puede deshacer.`,
+            title: "¿Eliminar banner?",
+            html: `¿Seguro que quieres eliminar "<strong>${banner.titulo}</strong>"? Esta acción no se puede deshacer.`,
             icon: "warning",
             showCancelButton: true,
-            confirmButtonText: "SÃ­, eliminar",
+            confirmButtonText: "Sí, eliminar",
             cancelButtonText: "Cancelar",
             confirmButtonColor: "#d33",
         });
@@ -917,11 +917,11 @@ function Admin() {
 
     const handleEliminarPedido = async (pedido: Pedido) => {
         const confirmacion = await Swal.fire({
-            title: "Â¿Eliminar pedido?",
-            text: `Pedido ${numeroPedido(pedido)}. Esta acciÃ³n no se puede deshacer.`,
+            title: "¿Eliminar pedido?",
+            text: `Pedido ${numeroPedido(pedido)}. Esta acción no se puede deshacer.`,
             icon: "warning",
             showCancelButton: true,
-            confirmButtonText: "SÃ­, eliminar",
+            confirmButtonText: "Sí, eliminar",
             cancelButtonText: "Cancelar",
             confirmButtonColor: "#d33",
         });
@@ -944,7 +944,7 @@ function Admin() {
         const lineas = (pedido.productos || [])
             .map(
                 (item) =>
-                    `â€¢ ${item.nombre} x${item.cantidad} â€” ${formatearPrecio(
+                    `• ${item.nombre} x${item.cantidad} — ${formatearPrecio(
                         Number(item.precio) * Number(item.cantidad || 1)
                     )}`
             )
@@ -955,30 +955,30 @@ function Admin() {
             : "";
 
         const direccion = pedido.direccion
-            ? `\n\nðŸ“¦ DirecciÃ³n de entrega: ${pedido.direccion}`
+            ? `\n\n📦 Dirección de entrega: ${pedido.direccion}`
             : "";
 
         const mensajesPorEstado: Record<string, string> = {
             pendiente:
-                `Â¡Hola${nombreCliente}! ðŸ‘‹ Gracias por tu pedido en ${site.nombre}.\n\n` +
-                `ðŸ“‹ N.Âº de pedido: ${numeroPedido(pedido)}\n` +
-                `Recibimos tu orden y estÃ¡ en proceso de confirmaciÃ³n.\n\n` +
+                `¡Hola${nombreCliente}! 👋 Gracias por tu pedido en ${site.nombre}.\n\n` +
+                `📋 N.º de pedido: ${numeroPedido(pedido)}\n` +
+                `Recibimos tu orden y está en proceso de confirmación.\n\n` +
                 `${lineas}\n\nTotal: ${formatearPrecio(pedido.total)}\n\n` +
-                `Pronto te escribimos para confirmar. Â¡Gracias! ðŸ’œ`,
+                `Pronto te escribimos para confirmar. ¡Gracias! 💜`,
             confirmado:
-                `Â¡Hola${nombreCliente}! âœ… Tu pedido en ${site.nombre} fue CONFIRMADO.\n\n` +
-                `ðŸ“‹ N.Âº de pedido: ${numeroPedido(pedido)}\n` +
+                `¡Hola${nombreCliente}! ✅ Tu pedido en ${site.nombre} fue CONFIRMADO.\n\n` +
+                `📋 N.º de pedido: ${numeroPedido(pedido)}\n` +
                 `${lineas}\n\nTotal: ${formatearPrecio(pedido.total)}${direccion}\n\n` +
-                `Te escribiremos para coordinar el envÃ­o. Â¡Gracias! ðŸ’œ`,
+                `Te escribiremos para coordinar el envío. ¡Gracias! 💜`,
             completado:
-                `Â¡Hola${nombreCliente}! ðŸŽ‰ Tu pedido en ${site.nombre} fue ENTREGADO.\n\n` +
-                `ðŸ“‹ N.Âº de pedido: ${numeroPedido(pedido)}\n` +
+                `¡Hola${nombreCliente}! 🎉 Tu pedido en ${site.nombre} fue ENTREGADO.\n\n` +
+                `📋 N.º de pedido: ${numeroPedido(pedido)}\n` +
                 `${lineas}\n\nTotal: ${formatearPrecio(pedido.total)}\n\n` +
-                `Â¡Gracias por tu compra! Te esperamos pronto. ðŸ’œ`,
+                `¡Gracias por tu compra! Te esperamos pronto. 💜`,
             cancelado:
-                `Â¡Hola${nombreCliente}! Lamentamos informarte que tu pedido en ${site.nombre} fue cancelado.\n\n` +
-                `ðŸ“‹ N.Âº de pedido: ${numeroPedido(pedido)}\n` +
-                `${lineas}\n\nSi tienes dudas, escrÃ­benos. Â¡Gracias! ðŸ’œ`,
+                `¡Hola${nombreCliente}! Lamentamos informarte que tu pedido en ${site.nombre} fue cancelado.\n\n` +
+                `📋 N.º de pedido: ${numeroPedido(pedido)}\n` +
+                `${lineas}\n\nSi tienes dudas, escríbenos. ¡Gracias! 💜`,
         };
 
         return encodeURIComponent(
@@ -1066,7 +1066,7 @@ function Admin() {
                     </nav>
 
                     <button className="sidebar-cerrar" onClick={handleLogout}>
-                        <FaSignOutAlt /> <span>Cerrar sesiÃ³n</span>
+                        <FaSignOutAlt /> <span>Cerrar sesión</span>
                     </button>
                 </aside>
 
@@ -1080,7 +1080,7 @@ function Admin() {
                             <button
                                 className="sidebar-toggle"
                                 onClick={alternarSidebar}
-                                aria-label={sidebarRevelado ? "Colapsar menÃº" : "Expandir menÃº"}
+                                aria-label={sidebarRevelado ? "Colapsar menú" : "Expandir menú"}
                             >
                                 {sidebarRevelado ? <FaChevronLeft /> : <FaChevronRight />}
                             </button>
@@ -1142,7 +1142,7 @@ function Admin() {
                                                 handleLogout();
                                             }}
                                         >
-                                            <FaSignOutAlt /> Cerrar sesiÃ³n
+                                            <FaSignOutAlt /> Cerrar sesión
                                         </button>
                                     </div>
                                 )}
@@ -1187,14 +1187,14 @@ function Admin() {
                                     type="text"
                                     value={busquedaProductos}
                                     onChange={(e) => setBusquedaProductos(e.target.value)}
-                                    placeholder="Buscar por nombre, categorÃ­a o cÃ³digo..."
+                                    placeholder="Buscar por nombre, categoría o código..."
                                 />
                                 {busquedaProductos && (
                                     <button
                                         type="button"
                                         className="admin-busqueda-limpiar"
                                         onClick={() => setBusquedaProductos("")}
-                                        title="Limpiar bÃºsqueda"
+                                        title="Limpiar búsqueda"
                                     >
                                         <FaTimes />
                                     </button>
@@ -1224,14 +1224,14 @@ function Admin() {
                                     </label>
 
                                     <label>
-                                        CategorÃ­a *
+                                        Categoría *
                                         <select
                                             name="id_categoria"
                                             value={formulario.id_categoria}
                                             onChange={handleChange}
                                             required
                                         >
-                                            <option value="">Selecciona una categorÃ­a</option>
+                                            <option value="">Selecciona una categoría</option>
                                             {categorias.map((c) => (
                                                 <option key={c.id_categoria} value={c.id_categoria}>
                                                     {c.nombre}
@@ -1283,7 +1283,7 @@ function Admin() {
                                     </label>
 
                                     <label>
-                                        SubcategorÃ­a
+                                        Subcategoría
                                         <input
                                             name="subcategoria"
                                             value={formulario.subcategoria}
@@ -1317,13 +1317,13 @@ function Admin() {
                                     </label>
 
                                     <label className="form-full">
-                                        DescripciÃ³n
+                                        Descripción
                                         <textarea
                                             name="descripcion"
                                             rows={3}
                                             value={formulario.descripcion}
                                             onChange={handleChange}
-                                            placeholder="DescripciÃ³n del producto"
+                                            placeholder="Descripción del producto"
                                         />
                                     </label>
 
@@ -1366,16 +1366,16 @@ function Admin() {
 
                                         <div className="producto-vista-detalles">
                                             <div className="producto-vista-dato">
-                                                <span className="producto-vista-etiqueta">CategorÃ­a</span>
+                                                <span className="producto-vista-etiqueta">Categoría</span>
                                                 <span className="producto-vista-valor">
-                                                    {productoVisto.categoria?.nombre || "â€”"}
+                                                    {productoVisto.categoria?.nombre || "—"}
                                                 </span>
                                             </div>
 
                                             <div className="producto-vista-dato">
-                                                <span className="producto-vista-etiqueta">SubcategorÃ­a</span>
+                                                <span className="producto-vista-etiqueta">Subcategoría</span>
                                                 <span className="producto-vista-valor">
-                                                    {productoVisto.subcategoria || "â€”"}
+                                                    {productoVisto.subcategoria || "—"}
                                                 </span>
                                             </div>
 
@@ -1400,9 +1400,9 @@ function Admin() {
                                             </div>
 
                                             <div className="producto-vista-desc">
-                                                <span className="producto-vista-etiqueta">DescripciÃ³n</span>
+                                                <span className="producto-vista-etiqueta">Descripción</span>
                                                 <p>
-                                                    {productoVisto.descripcion || "Sin descripciÃ³n."}
+                                                    {productoVisto.descripcion || "Sin descripción."}
                                                 </p>
                                             </div>
                                         </div>
@@ -1434,8 +1434,8 @@ function Admin() {
                                     <tr>
                                         <th>Imagen</th>
                                         <th>Nombre</th>
-                                        <th>CategorÃ­a</th>
-                                        <th>SubcategorÃ­a</th>
+                                        <th>Categoría</th>
+                                        <th>Subcategoría</th>
                                         <th>Precio</th>
                                         <th>Stock</th>
                                         <th>Estado</th>
@@ -1449,7 +1449,7 @@ function Admin() {
                                                 {p.imagen ? (
                                                     <img src={rutaImagen(p.imagen)} alt={p.nombre} className="tabla-img" />
                                                 ) : (
-                                                    <span className="sin-imagen">â€”</span>
+                                                    <span className="sin-imagen">—</span>
                                                 )}
                                             </td>
                                             <td>
@@ -1458,8 +1458,8 @@ function Admin() {
                                                     <span className="badge-nuevo-tabla">Nuevo</span>
                                                 )}
                                             </td>
-                                            <td>{p.categoria?.nombre || "â€”"}</td>
-                                            <td>{p.subcategoria || "â€”"}</td>
+                                            <td>{p.categoria?.nombre || "—"}</td>
+                                            <td>{p.subcategoria || "—"}</td>
                                             <td>
                                                 L {p.precio}
                                                 {p.precio_anterior && (
@@ -1491,8 +1491,8 @@ function Admin() {
                             {productosFiltrados.length === 0 && (
                                 <p className="sin-productos">
                                     {terminoBusqueda
-                                        ? "No se encontraron productos con esa bÃºsqueda."
-                                        : "AÃºn no hay productos. Crea el primero."}
+                                        ? "No se encontraron productos con esa búsqueda."
+                                        : "Aún no hay productos. Crea el primero."}
                                 </p>
                             )}
                         </div>
@@ -1503,7 +1503,7 @@ function Admin() {
                     <>
                         <div className="admin-toolbar">
                             <button className="btn-nuevo" onClick={abrirNuevaCategoria}>
-                                <FaPlus /> Nueva categorÃ­a
+                                <FaPlus /> Nueva categoría
                             </button>
                         </div>
 
@@ -1514,7 +1514,7 @@ function Admin() {
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <form className="admin-form" onSubmit={handleCatSubmit}>
-                                        <h4>{editandoCat ? "Editar categorÃ­a" : "Nueva categorÃ­a"}</h4>
+                                        <h4>{editandoCat ? "Editar categoría" : "Nueva categoría"}</h4>
 
                                         <div className="form-grid">
                                             <label>
@@ -1529,7 +1529,7 @@ function Admin() {
                                             </label>
 
                                             <label>
-                                                DescripciÃ³n
+                                                Descripción
                                                 <input
                                                     name="descripcion"
                                                     value={catForm.descripcion}
@@ -1557,7 +1557,7 @@ function Admin() {
                                 <thead>
                                     <tr>
                                         <th>Nombre</th>
-                                        <th>DescripciÃ³n</th>
+                                        <th>Descripción</th>
                                         <th>Productos</th>
                                         <th>Acciones</th>
                                     </tr>
@@ -1566,7 +1566,7 @@ function Admin() {
                                     {categorias.map((c) => (
                                         <tr key={c.id_categoria}>
                                             <td>{c.nombre}</td>
-                                            <td>{c.descripcion || "â€”"}</td>
+                                            <td>{c.descripcion || "—"}</td>
                                             <td>{productosDeCategoria(c.id_categoria)}</td>
                                             <td className="acciones">
                                                 <button onClick={() => abrirEdicionCategoria(c)} title="Editar">
@@ -1582,7 +1582,7 @@ function Admin() {
                             </table>
 
                             {categorias.length === 0 && (
-                                <p className="sin-productos">AÃºn no hay categorÃ­as.</p>
+                                <p className="sin-productos">Aún no hay categorías.</p>
                             )}
                         </div>
                     </>
@@ -1597,7 +1597,7 @@ function Admin() {
                         </div>
 
                         <p className="banner-ayuda">
-                            Estas imÃ¡genes se muestran como portada en la tienda. Sube fotos anchas (1200px o mÃ¡s) para que se vean bien.
+                            Estas imágenes se muestran como portada en la tienda. Sube fotos anchas (1200px o más) para que se vean bien.
                         </p>
 
                         {mostrarBannerForm && (
@@ -1611,7 +1611,7 @@ function Admin() {
 
                                         <div className="form-grid">
                                             <label>
-                                                TÃ­tulo *
+                                                Título *
                                                 <input
                                                     name="titulo"
                                                     value={bannerForm.titulo}
@@ -1646,13 +1646,13 @@ function Admin() {
                                             </label>
 
                                             <label className="form-full">
-                                                DescripciÃ³n
+                                                Descripción
                                                 <textarea
                                                     name="descripcion"
                                                     rows={2}
                                                     value={bannerForm.descripcion}
                                                     onChange={handleBannerChange}
-                                                    placeholder="DescripciÃ³n del banner"
+                                                    placeholder="Descripción del banner"
                                                 />
                                             </label>
 
@@ -1683,7 +1683,7 @@ function Admin() {
                                 <thead>
                                     <tr>
                                         <th>Imagen</th>
-                                        <th>TÃ­tulo</th>
+                                        <th>Título</th>
                                         <th>Orden</th>
                                         <th>Estado</th>
                                         <th>Acciones</th>
@@ -1696,7 +1696,7 @@ function Admin() {
                                                 {b.imagen ? (
                                                     <img src={rutaImagen(b.imagen)} alt={b.titulo} className="tabla-img" />
                                                 ) : (
-                                                    <span className="sin-imagen">â€”</span>
+                                                    <span className="sin-imagen">—</span>
                                                 )}
                                             </td>
                                             <td>{b.titulo}</td>
@@ -1720,7 +1720,7 @@ function Admin() {
                             </table>
 
                             {banners.length === 0 && (
-                                <p className="sin-productos">AÃºn no hay banners. Crea el primero.</p>
+                                <p className="sin-productos">Aún no hay banners. Crea el primero.</p>
                             )}
                         </div>
                     </>
@@ -1729,12 +1729,12 @@ function Admin() {
                 {pestana === "pedidos" && (
                     <>
                         <p className="banner-ayuda">
-                            AquÃ­ ves los pedidos que los clientes envÃ­an desde la tienda, con el
+                            Aquí ves los pedidos que los clientes envían desde la tienda, con el
                             total que debes cobrar. Cambia el estado a medida que los atiendes.
                         </p>
 
                         {pedidos.length === 0 ? (
-                            <p className="sin-productos">AÃºn no hay pedidos.</p>
+                            <p className="sin-productos">Aún no hay pedidos.</p>
                         ) : (
                             <>
                                 <div className="admin-toolbar">
@@ -1744,14 +1744,14 @@ function Admin() {
                                             type="text"
                                             value={busquedaPedidos}
                                             onChange={(e) => setBusquedaPedidos(e.target.value)}
-                                            placeholder="Buscar por nÃºmero, cliente o telÃ©fono..."
+                                            placeholder="Buscar por número, cliente o teléfono..."
                                         />
                                         {busquedaPedidos && (
                                             <button
                                                 type="button"
                                                 className="admin-busqueda-limpiar"
                                                 onClick={() => setBusquedaPedidos("")}
-                                                title="Limpiar bÃºsqueda"
+                                                title="Limpiar búsqueda"
                                             >
                                                 <FaTimes />
                                             </button>
@@ -1784,7 +1784,7 @@ function Admin() {
                                         <table>
                                             <thead>
                                                 <tr>
-                                                    <th>NÂ°</th>
+                                                    <th>N°</th>
                                                     <th>Fecha</th>
                                                     <th>Cliente</th>
                                                     <th>Productos</th>
@@ -1817,7 +1817,7 @@ function Admin() {
                                                             <ul className="pedido-productos">
                                                                 {(pedido.productos || []).map((item, i) => (
                                                                     <li key={i}>
-                                                                        {item.nombre} Ã— {item.cantidad}
+                                                                        {item.nombre} × {item.cantidad}
                                                                     </li>
                                                                 ))}
                                                             </ul>
@@ -1878,7 +1878,7 @@ function Admin() {
                         </div>
 
                         <p className="banner-ayuda">
-                            Productos con precio anterior (descuento activo). EdÃ­talos para
+                            Productos con precio anterior (descuento activo). Edítalos para
                             ajustar la oferta o quitar el precio anterior.
                         </p>
 
@@ -1915,7 +1915,7 @@ function Admin() {
                                                         {p.imagen ? (
                                                             <img src={rutaImagen(p.imagen)} alt={p.nombre} className="tabla-img" />
                                                         ) : (
-                                                            <span className="sin-imagen">â€”</span>
+                                                            <span className="sin-imagen">—</span>
                                                         )}
                                                     </td>
                                                     <td>{p.nombre}</td>
@@ -1943,7 +1943,7 @@ function Admin() {
                                     p.precio_anterior &&
                                     Number(p.precio_anterior) > Number(p.precio)
                             ).length === 0 && (
-                                <p className="sin-productos">AÃºn no hay ofertas activas.</p>
+                                <p className="sin-productos">Aún no hay ofertas activas.</p>
                             )}
                         </div>
                     </>
