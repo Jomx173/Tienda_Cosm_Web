@@ -14,10 +14,6 @@
     background-size: cover;
     background-position: center;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
     position: relative;
 }
 
@@ -34,8 +30,14 @@
 ========================= */
 
 .hero-overlay{
-    position: relative;
+    position: absolute;
+    inset: 0;
     z-index: 2;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 
     text-align: center;
 
@@ -43,7 +45,13 @@
 
     max-width: 700px;
 
+    width: 100%;
+
+    margin: 0 auto;
+
     padding: 0 20px;
+
+    box-sizing: border-box;
 }
 
 .hero-overlay span{
@@ -70,31 +78,7 @@
     font-size: 20px;
     line-height: 30px;
 
-    margin-bottom: 34px;
-}
-
-.hero-overlay .btn-primary{
-    background: var(--gold);
-    color: #3a2a05;
-
-    border: none;
-
-    padding: 16px 40px;
-
-    border-radius: 30px;
-
-    font-size: 18px;
-    font-weight: 600;
-
-    cursor: pointer;
-
-    transition: .3s;
-}
-
-.hero-overlay .btn-primary:hover{
-    background: #fff;
-    color: var(--primary);
-    transform: translateY(-3px);
+    margin: 0;
 }
 
 /* =========================

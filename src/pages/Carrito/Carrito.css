@@ -431,6 +431,177 @@
 }
 
 /* =========================
+   REVISIÓN
+========================= */
+
+.carrito-revision{
+    background:#fff;
+
+    max-width:820px;
+    margin:0 auto;
+
+    padding:30px;
+
+    border-radius:16px;
+
+    box-shadow:var(--shadow);
+}
+
+.carrito-revision-cab{
+    text-align:center;
+
+    margin-bottom:22px;
+}
+
+.carrito-revision-cab h2{
+    color:var(--primary);
+    font-size:26px;
+
+    margin-bottom:6px;
+}
+
+.carrito-revision-cab p{
+    color:#888;
+    font-size:15px;
+}
+
+.carrito-revision-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+
+    gap:22px;
+
+    margin-bottom:22px;
+}
+
+.carrito-revision-datos,
+.carrito-revision-productos{
+    background:var(--background);
+
+    border:1px solid #EDE2CE;
+    border-radius:14px;
+
+    padding:18px;
+}
+
+.carrito-revision h3{
+    color:var(--primary);
+    font-size:17px;
+
+    margin-bottom:14px;
+}
+
+.carrito-revision-fila{
+    display:flex;
+    justify-content:space-between;
+
+    gap:12px;
+
+    font-size:15px;
+
+    padding:8px 0;
+
+    border-bottom:1px solid #EDE2CE;
+}
+
+.carrito-revision-fila:last-child{
+    border-bottom:none;
+}
+
+.carrito-revision-label{
+    color:#8A7A63;
+
+    flex:none;
+}
+
+.carrito-revision-valor{
+    color:var(--text);
+
+    text-align:right;
+
+    word-break:break-word;
+}
+
+.carrito-revision-productos ul{
+    list-style:none;
+}
+
+.carrito-revision-productos li{
+    display:flex;
+    justify-content:space-between;
+
+    gap:12px;
+
+    font-size:15px;
+    color:var(--text);
+
+    padding:6px 0;
+
+    border-bottom:1px solid #EDE2CE;
+}
+
+.carrito-revision-productos li span:first-child{
+    color:#666;
+}
+
+.carrito-revision-total{
+    display:flex;
+    justify-content:space-between;
+
+    font-size:18px;
+    font-weight:700;
+
+    color:var(--text);
+
+    padding-top:12px;
+    margin-top:10px;
+}
+
+.carrito-revision-total span:last-child{
+    color:var(--primary);
+}
+
+.carrito-revision-acciones{
+    display:flex;
+
+    gap:12px;
+}
+
+.carrito-revision-acciones .carrito-ordenar{
+    flex:1;
+}
+
+.carrito-volver-editar{
+    flex:1;
+
+    padding:16px;
+
+    border:2px solid var(--primary);
+    border-radius:30px;
+
+    background:transparent;
+    color:var(--primary);
+
+    font-size:16px;
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.3s;
+}
+
+.carrito-volver-editar:hover{
+    background:var(--primary);
+    color:#fff;
+}
+
+.carrito-volver-editar:disabled{
+    opacity:.6;
+
+    cursor:default;
+}
+
+/* =========================
    ÉXITO
 ========================= */
 
@@ -472,6 +643,10 @@
 
     .carrito-resumen{
         position:static;
+    }
+
+    .carrito-revision-grid{
+        grid-template-columns:1fr;
     }
 
     .carrito-item{

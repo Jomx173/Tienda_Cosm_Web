@@ -5,23 +5,27 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.12.0",
+    "@types/lodash": "^4.17.25",
     "aos": "^2.3.4",
     "axios": "^1.18.1",
     "bootstrap": "^5.3.8",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-icons": "^5.7.0",
+    "react-redux": "^9.3.0",
     "react-router-dom": "^7.18.1",
     "sweetalert2": "^11.26.25",
     "swiper": "^14.0.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^26.2.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
@@ -29,6 +33,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
+    "typescript": "~5.9.3",
     "vite": "^8.1.1"
   }
 }

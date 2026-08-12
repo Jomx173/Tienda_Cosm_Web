@@ -1,0 +1,80 @@
+/* =========================
+   CONFIGURACIÓN
+========================= */
+
+.configuracion-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+
+    align-items:start;
+}
+
+.configuracion-ayuda{
+    font-size:13px;
+    color:#888;
+
+    margin-top:14px;
+
+    line-height:1.6;
+}
+
+.configuracion-aviso{
+    font-size:13px;
+    color:#7a5a00;
+
+    background:#fff8e1;
+
+    border:1px solid #f0d27a;
+
+    border-radius:10px;
+
+    padding:10px 14px;
+
+    margin-top:16px;
+
+    line-height:1.6;
+}
+
+.configuracion .password-wrapper{
+    margin-bottom:0;
+    padding:0 14px;
+}
+
+.configuracion .password-wrapper input{
+    border:none;
+    padding:12px 0;
+    border-radius:0;
+}
+
+.configuracion .password-toggle{
+    background:transparent;
+    border:none;
+
+    color:#999;
+    font-size:20px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    padding:6px;
+    margin-left:8px;
+
+    flex-shrink:0;
+
+    cursor:pointer;
+
+    transition:.3s;
+}
+
+.configuracion .password-toggle:hover{
+    background:transparent;
+    color:var(--primary);
+}
+
+@media(max-width:992px){
+    .configuracion-grid{
+        grid-template-columns:1fr;
+    }
+}

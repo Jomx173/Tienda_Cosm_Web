@@ -11,15 +11,32 @@
 
     background: #ffffff;
 
+    box-shadow: 0 2px 15px rgba(0,0,0,.08);
+
+    transition: background-color .3s ease, backdrop-filter .3s ease, box-shadow .3s ease;
+}
+
+.navbar.scrolled{
+    background: rgba(255,255,255,.82);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    box-shadow: 0 2px 18px rgba(58,31,36,.14);
+}
+
+.navbar-container{
+    max-width: 1400px;
+    width: 95%;
+    height: 100%;
+
+    margin: 0 auto;
+
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
-
-    padding: 0 3%;
-
-    box-shadow: 0 2px 15px rgba(0,0,0,.08);
 }
 
 /* Sobrescribe .navbar-nav de Bootstrap (flex-direction:column) */
@@ -32,7 +49,7 @@
 
     list-style: none;
 
-    margin: 0 auto;
+    margin: 0;
     padding: 0;
 
     gap: 8px;
@@ -45,10 +62,36 @@
 .logo{
     display: inline-flex;
     align-items: center;
+    gap: 12px;
 
-    margin-left: 2%;
+    text-decoration: none;
 
     transition: .3s;
+}
+
+.logo-texto{
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .3px;
+
+    color: var(--primary, #6B1420);
+
+    line-height: 1.2;
+
+    white-space: nowrap;
+}
+
+.logo-texto-medio,
+.logo-texto-corto{
+    display: none;
+}
+
+.logo:hover .logo-texto{
+    color: var(--primary-dark, #5A0F1A);
 }
 
 .logo img{
@@ -181,12 +224,18 @@
 
     .navbar{
         height:80px;
-
-        padding:0 4%;
     }
 
     .logo img{
         height:80px;
+    }
+
+    .logo-texto-largo{
+        display: none;
+    }
+
+    .logo-texto-medio{
+        display: inline;
     }
 
     .navbar-link{
@@ -204,6 +253,22 @@
 
     .logo img{
         height:70px;
+    }
+
+    .logo{
+        gap: 8px;
+    }
+
+    .logo-texto{
+        font-size: 12px;
+    }
+
+    .logo-texto-medio{
+        display: none;
+    }
+
+    .logo-texto-corto{
+        display: inline;
     }
 
     .navbar .navbar-nav{

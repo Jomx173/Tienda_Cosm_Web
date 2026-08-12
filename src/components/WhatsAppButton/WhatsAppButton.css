@@ -82,6 +82,13 @@
     box-shadow:0 8px 20px rgba(220,39,67,.4);
 }
 
+.float-facebook{
+    background:#1877F2;
+    color:#fff;
+
+    box-shadow:0 8px 20px rgba(24,119,242,.4);
+}
+
 .float-cart{
     position:relative;
 
