@@ -104,7 +104,7 @@ function ProductoCard({ producto, soloLectura = false }: Props) {
                             )}
                         </button>
 
-                        <a href={site.whatsappGrupoUrl} target="_blank" rel="noopener noreferrer" className="btn-preguntar">
+                        <a href={site.whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-preguntar">
                             <FaWhatsapp /> Preguntar por este producto
                         </a>
 

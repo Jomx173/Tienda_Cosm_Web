@@ -163,7 +163,7 @@ function ProductoDetalle() {
 
                 <div className="detalle-card">
                     <a
-                        href={site.whatsappGrupoUrl}
+                        href={site.whatsappUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="detalle-pregunta"
@@ -255,7 +255,7 @@ function ProductoDetalle() {
                         </div>
 
                         <a
-                            href={site.whatsappGrupoUrl}
+                            href={site.whatsappUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="detalle-whatsapp"
