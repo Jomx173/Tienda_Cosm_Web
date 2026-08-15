@@ -64,7 +64,6 @@ export type AdminInfo = {
     id: number;
     nombre: string;
     identidad: string;
-    correo?: string;
     rolId: number;
 };
 
