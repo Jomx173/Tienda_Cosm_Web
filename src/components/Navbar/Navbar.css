@@ -217,6 +217,67 @@
 }
 
 /* =========================
+   CARRITO EN NAVBAR
+========================= */
+
+.navbar-cart{
+    position: relative;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 44px;
+    height: 44px;
+
+    flex: none;
+
+    border-radius: 50%;
+
+    color: var(--primary, #6B1420);
+
+    font-size: 20px;
+
+    background: rgba(107,20,32,.06);
+
+    transition: .3s;
+}
+
+.navbar-cart:hover{
+    background: var(--primary, #6B1420);
+
+    color: #fff;
+
+    transform: translateY(-2px);
+}
+
+.navbar-cart-contador{
+    position: absolute;
+
+    top: -4px;
+    right: -4px;
+
+    min-width: 20px;
+    height: 20px;
+
+    padding: 0 5px;
+
+    background: #25D366;
+    color: #fff;
+
+    border-radius: 30px;
+
+    border: 2px solid #fff;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* =========================
    RESPONSIVE
 ========================= */
 

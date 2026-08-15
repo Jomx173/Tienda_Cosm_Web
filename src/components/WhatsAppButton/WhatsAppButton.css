@@ -89,41 +89,28 @@
     box-shadow:0 8px 20px rgba(24,119,242,.4);
 }
 
-.float-cart{
-    position:relative;
+/* =========================
+   RESPONSIVE (celular)
+========================= */
 
-    background:var(--primary);
-    color:#fff;
+@media(max-width:576px){
+    .floating-buttons{
+        bottom:14px;
+        right:14px;
 
-    box-shadow:0 8px 20px rgba(123,16,35,.35);
-}
+        gap:9px;
+    }
 
-.float-cart:hover{
-    background:var(--gold);
-    color:#3a2a05;
-}
+    .float-btn{
+        width:38px;
+        height:38px;
 
-.float-cart-contador{
-    position:absolute;
-    top:-3px;
-    right:-3px;
+        font-size:17px;
 
-    min-width:19px;
-    height:19px;
+        box-shadow:0 4px 12px rgba(0,0,0,.18);
+    }
 
-    padding:0 5px;
-
-    background:#25D366;
-    color:#fff;
-
-    border-radius:30px;
-
-    border:2px solid #fff;
-
-    font-size:11px;
-    font-weight:700;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    .float-label{
+        display:none;
+    }
 }

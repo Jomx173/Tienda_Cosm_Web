@@ -8,10 +8,12 @@ import Carrito from "./pages/Carrito/Carrito";
 import Productos from "./pages/Productos/Productos";
 import Categoria from "./pages/Categoria/Categoria";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
+import ScrollToTop from "./components/ScrollToTop/ScrollToTop";
 
 function App() {
     return (
         <BrowserRouter>
+            <ScrollToTop />
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/productos" element={<Productos />} />

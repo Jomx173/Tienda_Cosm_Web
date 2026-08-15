@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { FaChevronDown } from "react-icons/fa";
+import { FaChevronDown, FaShoppingCart } from "react-icons/fa";
 
 import logo from "../../assets/logo/logo.png";
 import { obtenerCategorias } from "../../services/productoService";
 import type { Categoria } from "../../services/types";
 import { slugify } from "../../utils/slugs";
+import { useSelector } from "../../store";
+import SelectorCarrito from "../../store/slices/Carrito/selectors";
 
 import "./Navbar.css";
 
@@ -17,6 +19,8 @@ function Navbar() {
     const [scrolled, setScrolled] = useState(false);
 
     const masRef = useRef<HTMLDivElement>(null);
+
+    const cantidadCarrito = useSelector(SelectorCarrito.getCantidadTotal);
 
     useEffect(() => {
         obtenerCategorias()
@@ -113,6 +117,13 @@ function Navbar() {
                         </div>
                     )}
                 </div>
+
+                <Link to="/carrito" className="navbar-cart" aria-label="Ver mi carrito">
+                    <FaShoppingCart />
+                    {cantidadCarrito > 0 && (
+                        <span className="navbar-cart-contador">{cantidadCarrito}</span>
+                    )}
+                </Link>
             </div>
         </nav>
     );

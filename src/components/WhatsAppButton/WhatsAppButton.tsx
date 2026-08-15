@@ -1,29 +1,12 @@
-import { FaWhatsapp, FaShoppingCart, FaInstagram, FaFacebook } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { FaWhatsapp, FaInstagram, FaFacebook } from "react-icons/fa";
 
-import { useSelector } from "../../store";
-import SelectorCarrito from "../../store/slices/Carrito/selectors";
 import site from "../../config/site";
 
 import "./WhatsAppButton.css";
 
 function WhatsAppButton() {
-  const cantidadTotal = useSelector(SelectorCarrito.getCantidadTotal);
-
   return (
     <div className="floating-buttons">
-      <Link
-        to="/carrito"
-        className="float-btn float-cart"
-        aria-label="Ver mi carrito"
-      >
-        <FaShoppingCart />
-        {cantidadTotal > 0 && (
-          <span className="float-cart-contador">{cantidadTotal}</span>
-        )}
-        <span className="float-label">Carrito</span>
-      </Link>
-
       <a
         href={site.whatsappGrupoUrl}
         target="_blank"
