@@ -1,0 +1,333 @@
+.admin-login {
+    position: relative;
+
+    min-height: 100vh;
+
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    padding: 24px 20px;
+
+    overflow: hidden;
+}
+
+/* ---------- INTRO: GLOW ---------- */
+.login-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    width: 300px;
+    height: 300px;
+
+    border-radius: 50%;
+
+    background: radial-gradient(circle, rgba(217, 174, 85, 0.28), transparent 65%);
+
+    transform: translate(-50%, -50%);
+
+    animation: login-glow 2.2s ease-in-out infinite;
+
+    transition: opacity 0.4s ease 0.1s;
+}
+
+.login-glow--oculto {
+    opacity: 0;
+}
+
+@keyframes login-glow {
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* ---------- FIGURA Y LOGO (mismo elemento) ---------- */
+.login-figura {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-bottom: 26px;
+
+    z-index: 2;
+
+    transition: transform 0.8s cubic-bezier(0.35, 0.1, 0.2, 1);
+}
+
+.login-figura--intro {
+    transform: translateY(var(--desp, 38vh)) scale(1.45);
+}
+
+.login-logo {
+    position: relative;
+
+    width: 92px;
+    height: 92px;
+
+    max-width: 92px;
+
+    border-radius: 50%;
+
+    object-fit: contain;
+
+    border: 3px solid var(--gold);
+
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+}
+
+/* ---------- ANILLO ---------- */
+.login-anillo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    width: 180px;
+    height: 180px;
+
+    border: 2px solid rgba(217, 174, 85, 0.4);
+    border-radius: 50%;
+
+    transform: translate(-50%, -50%);
+
+    animation: login-anillo 1s ease 0.2s backwards;
+
+    transition: opacity 0.35s ease 0.05s;
+}
+
+.login-anillo--oculto {
+    opacity: 0;
+}
+
+.login-anillo::after {
+    content: "";
+    position: absolute;
+    inset: -16px;
+
+    border: 1px solid rgba(217, 174, 85, 0.22);
+    border-radius: 50%;
+
+    animation: login-anillo 1.2s ease 0.5s backwards;
+}
+
+@keyframes login-anillo {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.55);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* ---------- DECOR INTRO (linea + texto) ---------- */
+.login-decor {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+
+    width: max-content;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+
+    transform: translateX(-50%);
+
+    transition: opacity 0.35s ease 0.1s;
+}
+
+.login-decor--oculto {
+    opacity: 0;
+}
+
+.login-linea {
+    display: block;
+
+    width: 90px;
+    height: 1px;
+
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+
+    transform: scaleX(0);
+
+    animation: login-linea 0.7s ease 0.45s forwards;
+}
+
+@keyframes login-linea {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+
+.login-sub {
+    margin: 0;
+
+    color: #fff;
+
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    white-space: nowrap;
+
+    opacity: 0;
+
+    animation: login-sub 0.6s ease 0.85s forwards;
+}
+
+@keyframes login-sub {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ---------- SPARKLES ---------- */
+.login-sparkles {
+    position: absolute;
+    inset: 0;
+
+    z-index: 0;
+
+    overflow: hidden;
+
+    pointer-events: none;
+}
+
+.login-sparkle {
+    position: absolute;
+
+    width: 4px;
+    height: 4px;
+
+    border-radius: 50%;
+
+    background: radial-gradient(circle, #f5d76e 0%, #e5c04a 45%, #d4af37 100%);
+
+    box-shadow: 0 0 6px 2px rgba(212, 175, 55, 0.45);
+
+    opacity: 0;
+
+    animation: login-sparkle 6s ease-in-out infinite;
+}
+
+.login-sparkle--estrella {
+    width: auto;
+    height: auto;
+
+    border-radius: 0;
+
+    background: transparent;
+
+    box-shadow: none;
+}
+
+.login-sparkle--estrella::before {
+    content: "✦";
+
+    color: #f5d76e;
+
+    font-size: 13px;
+    line-height: 1;
+
+    text-shadow: 0 0 8px rgba(212, 175, 55, 0.7), 0 0 16px rgba(212, 175, 55, 0.35);
+}
+
+@keyframes login-sparkle {
+    0% {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+    40% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    70% {
+        opacity: 0.35;
+        transform: scale(0.85);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+}
+
+/* ---------- TARJETA ---------- */
+.login-card {
+    position: relative;
+
+    z-index: 2;
+
+    width: 100%;
+    max-width: 400px;
+
+    transition: opacity 0.5s ease 0.75s, transform 0.5s ease 0.75s;
+}
+
+.login-card--oculta {
+    opacity: 0;
+    transform: translateY(15px);
+
+    pointer-events: none;
+
+    transition: none;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 576px) {
+    .login-logo {
+        width: 80px;
+        height: 80px;
+
+        max-width: 80px;
+    }
+
+    .login-figura {
+        margin-bottom: 20px;
+    }
+
+    .login-anillo {
+        width: 155px;
+        height: 155px;
+    }
+
+    .login-sub {
+        font-size: 14px;
+    }
+
+    .login-sparkle {
+        width: 3px;
+        height: 3px;
+    }
+
+    .login-sparkle--estrella::before {
+        font-size: 11px;
+    }
+
+    .login-sparkle:nth-child(3n) {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .login-sparkle {
+        animation: none;
+        opacity: 0.4;
+    }
+}
