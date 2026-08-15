@@ -112,10 +112,14 @@ function Login() {
                 ref={figuraRef}
                 className={iniciando ? "login-figura login-figura--intro" : "login-figura"}
             >
-                <span
-                    className={iniciando ? "login-anillo" : "login-anillo login-anillo--oculto"}
-                    aria-hidden="true"
-                ></span>
+                {[0, 1.65, 3.3].map((delay) => (
+                    <span
+                        key={delay}
+                        className={iniciando ? "login-anillo" : "login-anillo login-anillo--oculto"}
+                        style={{ animationDelay: `${delay}s` }}
+                        aria-hidden="true"
+                    />
+                ))}
                 <img ref={logoRef} src={logo} alt="MD" className="login-logo" />
 
                 <div

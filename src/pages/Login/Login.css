@@ -82,7 +82,7 @@
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
 }
 
-/* ---------- ANILLO ---------- */
+/* ---------- ANILLO / ONDAS ---------- */
 .login-anillo {
     position: absolute;
     top: 50%;
@@ -91,12 +91,16 @@
     width: 180px;
     height: 180px;
 
-    border: 2px solid rgba(217, 174, 85, 0.4);
+    border: 2px solid rgba(212, 175, 55, 0.6);
     border-radius: 50%;
+
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.3), inset 0 0 10px rgba(212, 175, 55, 0.12);
 
     transform: translate(-50%, -50%);
 
-    animation: login-anillo 1s ease 0.2s backwards;
+    opacity: 0;
+
+    animation: login-anillo 1.65s ease-out both;
 
     transition: opacity 0.35s ease 0.05s;
 }
@@ -105,25 +109,17 @@
     opacity: 0;
 }
 
-.login-anillo::after {
-    content: "";
-    position: absolute;
-    inset: -16px;
-
-    border: 1px solid rgba(217, 174, 85, 0.22);
-    border-radius: 50%;
-
-    animation: login-anillo 1.2s ease 0.5s backwards;
-}
-
 @keyframes login-anillo {
-    from {
+    0% {
         opacity: 0;
-        transform: translate(-50%, -50%) scale(0.55);
+        transform: translate(-50%, -50%) scale(0.45);
     }
-    to {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
+    20% {
+        opacity: 0.85;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.7);
     }
 }
 
