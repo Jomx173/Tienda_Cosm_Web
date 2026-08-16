@@ -12,6 +12,11 @@ import "./Login.css";
 
 import logo from "../../assets/logo/logo-blanco.png";
 
+const sanitizarIdentidad = (valor: string): string => valor.replace(/[^0-9-]/g, "");
+const sanitizarPassword = (valor: string): string => valor.replace(/[^A-Za-z0-9]/g, "");
+const VALIDAR_IDENTIDAD = /^[0-9-]+$/;
+const VALIDAR_PASSWORD = /^[A-Za-z0-9]+$/;
+
 const BRILLITOS = [
     { top: "6%", left: "12%", delay: 0, dur: 6, estrella: true },
     { top: "10%", left: "34%", delay: 1.2, dur: 7, estrella: false },
@@ -88,6 +93,18 @@ function Login() {
         setCargando(true);
         setError("");
 
+        if (!identidad || !VALIDAR_IDENTIDAD.test(identidad)) {
+            setError("El usuario solo puede contener números y guiones.");
+            setCargando(false);
+            return;
+        }
+
+        if (!password || !VALIDAR_PASSWORD.test(password)) {
+            setError("La contraseña solo puede contener letras y números.");
+            setCargando(false);
+            return;
+        }
+
         try {
             const admin = await login(identidad, password);
             dispatch(ActionAuth.setAdmin(admin));
@@ -156,9 +173,13 @@ function Login() {
 
                 <input
                     type="text"
+                    inputMode="numeric"
                     placeholder="Número de identidad"
                     value={identidad}
-                    onChange={(e) => setIdentidad(e.target.value)}
+                    onChange={(e) => {
+                        setIdentidad(sanitizarIdentidad(e.target.value));
+                        setError("");
+                    }}
                     required
                 />
 
@@ -167,7 +188,10 @@ function Login() {
                         type={verPassword ? "text" : "password"}
                         placeholder="Contraseña"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => {
+                            setPassword(sanitizarPassword(e.target.value));
+                            setError("");
+                        }}
                         required
                     />
                     <button
