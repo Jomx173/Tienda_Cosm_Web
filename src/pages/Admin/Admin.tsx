@@ -234,12 +234,28 @@ function Admin() {
         }
     }, [dispatch]);
 
+    const handleLogout = () => {
+        try {
+            logout();
+            dispatch(ActionAuth.setAutenticado(false));
+            dispatch(ActionAuth.setAdmin(null));
+            setProductos([]);
+            setMenuAbierto(false);
+            setDropdownAbierto(false);
+            setSidebarColapsada(false);
+            setSonidoActivo(true);
+            sonidoActivoRef.current = true;
+            setPerfilVersion(0);
+        } finally {
+            navegar("/login", { replace: true });
+        }
+    };
+
     const cerrarSesionSiNoAutorizado = (err: unknown) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const axiosError = err as any;
         if (axiosError?.response?.status === 401) {
-            logout();
-            dispatch(ActionAuth.setAutenticado(false));
+            handleLogout();
         }
     };
 
@@ -348,19 +364,6 @@ function Admin() {
 
         return () => clearInterval(intervalo);
     }, [autenticado, navegar, dispatch]);
-
-    const handleLogout = () => {
-        logout();
-        dispatch(ActionAuth.setAutenticado(false));
-        dispatch(ActionAuth.setAdmin(null));
-        setProductos([]);
-        setMenuAbierto(false);
-        setDropdownAbierto(false);
-        setSidebarColapsada(false);
-        setSonidoActivo(true);
-        sonidoActivoRef.current = true;
-        setPerfilVersion(0);
-    };
 
     const pedidosPendientes = pedidos.filter((p) => p.estado === "pendiente");
 

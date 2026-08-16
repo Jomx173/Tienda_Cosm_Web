@@ -2,12 +2,19 @@ import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 
 import { estaAutenticado } from "../../services/authService";
+import { useSelector } from "../../store";
+import SelectorAuth from "../../store/slices/Auth/selectors";
 
 type Props = {
     children: ReactNode;
 };
 
 const ProtectedRoute = ({ children }: Props) => {
+    // Suscripción al estado de autenticación: al hacer logout, este componente se
+    // re-renderiza y re-evalúa la protección sin necesidad de recargar la página.
+    useSelector(SelectorAuth.getAutenticado);
+    useSelector(SelectorAuth.getAdmin);
+
     if (!estaAutenticado()) {
         return <Navigate to="/login" replace />;
     }
