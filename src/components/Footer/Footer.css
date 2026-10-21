@@ -9,16 +9,20 @@
 
 .footer-main{
     max-width:1400px;
-    width:94%;
+    width:90%;
     margin:auto;
 
-    padding:70px 0 50px;
+    padding:60px 0 45px;
 
     display:grid;
-    grid-template-columns:1.4fr 1fr 1fr;
+    grid-template-columns:1.6fr 1fr 1fr;
     gap:40px;
 
     align-items:start;
+}
+
+.footer-col{
+    min-width:0;
 }
 
 .footer-brand{
@@ -29,8 +33,9 @@
 }
 
 .footer-brand-logo{
-    height:64px;
+    height:60px;
     width:auto;
+    max-width:100%;
     object-fit:contain;
 
     filter: brightness(0) invert(1);
@@ -40,7 +45,11 @@
     color:rgba(255,255,255,.75);
     font-size:16px;
     line-height:26px;
-    margin-bottom:22px;
+    margin-bottom:0;
+
+    max-width:420px;
+
+    overflow-wrap:anywhere;
 }
 
 .footer-col h4{
@@ -60,6 +69,10 @@
     color:rgba(255,255,255,.75);
     font-size:16px;
     transition:.3s;
+
+    min-width:0;
+    overflow-wrap:anywhere;
+    word-break:break-word;
 }
 
 .footer-col ul li a:hover{
@@ -104,14 +117,81 @@
    RESPONSIVE
 ========================= */
 
+/* Tablets: 2 columnas, brand a lo ancho */
 @media(max-width:992px){
     .footer-main{
+        width:92%;
+        padding:50px 0 40px;
         grid-template-columns:1fr 1fr;
+        gap:32px;
+    }
+
+    .footer-about{
+        grid-column:1 / -1;
+    }
+
+    .footer-about p{
+        max-width:100%;
     }
 }
 
+/* Móviles: una sola columna apilada */
 @media(max-width:600px){
     .footer-main{
+        width:100%;
+        padding:40px 20px 32px;
         grid-template-columns:1fr;
+        gap:28px;
+    }
+
+    .footer-about{
+        grid-column:auto;
+    }
+
+    .footer-brand-logo{
+        height:54px;
+    }
+
+    .footer-about p{
+        font-size:15px;
+        line-height:24px;
+    }
+
+    .footer-col h4{
+        font-size:18px;
+        margin-bottom:14px;
+    }
+
+    .footer-col ul li{
+        font-size:15px;
+        line-height:22px;
+        margin-bottom:10px;
+    }
+
+    .footer-col ul li a{
+        font-size:15px;
+    }
+
+    .footer-bottom{
+        padding:16px 20px;
+    }
+
+    .footer-bottom p{
+        font-size:14px;
+    }
+}
+
+/* Móviles pequeños */
+@media(max-width:430px){
+    .footer-main{
+        padding:34px 18px 28px;
+    }
+
+    .footer-brand-logo{
+        height:48px;
+    }
+
+    .footer-col h4{
+        font-size:17px;
     }
 }

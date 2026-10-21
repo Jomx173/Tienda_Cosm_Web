@@ -8,6 +8,28 @@ export type Categoria = {
     productos?: Producto[];
 };
 
+export type ProductoVariante = {
+    id_variante: number;
+    id_producto: number;
+    tono: string;
+    color?: string | null;
+    precio: number | string;
+    precio_anterior?: number | string | null;
+    stock: number | string;
+    codigo?: string | null;
+    orden?: number;
+    estado?: boolean;
+    imagenes?: ProductoImagen[];
+};
+
+export type ProductoImagen = {
+    id_imagen: number;
+    id_producto?: number;
+    id_variante?: number | null;
+    imagen: string;
+    orden?: number;
+};
+
 export type Producto = {
     id_producto: number;
     nombre: string;
@@ -22,6 +44,9 @@ export type Producto = {
     destacado?: boolean;
     imagen?: string | null;
     categoria?: Categoria | null;
+    variantes?: ProductoVariante[];
+    imagenes?: ProductoImagen[];
+    stock_total?: number;
     created_at?: string;
     updated_at?: string;
     /** Alias heredado para compatibilidad con datos antiguos */
@@ -43,6 +68,9 @@ export type Banner = {
 
 export type ItemPedido = {
     id_producto?: number;
+    id_variante?: number | null;
+    tono?: string | null;
+    codigo?: string | null;
     nombre?: string;
     precio?: number | string;
     cantidad?: number;
@@ -74,9 +102,15 @@ export type RespuestaApi<T = unknown> = {
 };
 
 export type ItemCarrito = {
-    id: number;
+    /** Clave única de la linea: producto + variante */
+    id: string;
+    id_producto: number;
+    id_variante: number | null;
+    tono: string | null;
     nombre: string;
     precio: number | string;
     imagen?: string;
     cantidad: number;
+    /** Stock disponible de la variante (o del producto si no tiene) */
+    stock?: number;
 };

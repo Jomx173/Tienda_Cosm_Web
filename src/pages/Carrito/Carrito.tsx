@@ -81,7 +81,9 @@ function Carrito() {
                 telefono_cliente: telefono,
                 direccion: direccion.trim(),
                 productos: items.map((item) => ({
-                    id_producto: item.id,
+                    id_producto: item.id_producto,
+                    id_variante: item.id_variante,
+                    tono: item.tono,
                     nombre: item.nombre,
                     precio: item.precio,
                     cantidad: item.cantidad,
@@ -165,7 +167,8 @@ function Carrito() {
                                     {items.map((item) => (
                                         <li key={item.id}>
                                             <span>
-                                                {item.nombre} x{item.cantidad}
+                                                {item.nombre}
+                                                {item.tono ? ` — ${item.tono}` : ""} x{item.cantidad}
                                             </span>
                                             <span>{formatearPrecio(Number(item.precio) * item.cantidad)}</span>
                                         </li>
@@ -221,6 +224,11 @@ function Carrito() {
 
                                     <div className="carrito-item-info">
                                         <p className="carrito-item-nombre">{item.nombre}</p>
+                                        {item.tono && (
+                                            <p className="carrito-item-tono">
+                                                Tono: <span>{item.tono}</span>
+                                            </p>
+                                        )}
                                         <p className="carrito-item-precio">
                                             {formatearPrecio(item.precio)}
                                         </p>

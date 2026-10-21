@@ -1,5 +1,12 @@
 import api from "./api";
-import type { Banner, Categoria, Producto, RespuestaApi } from "./types";
+import type {
+    Banner,
+    Categoria,
+    Producto,
+    ProductoImagen,
+    ProductoVariante,
+    RespuestaApi,
+} from "./types";
 
 export const obtenerProductos = async (todos = false): Promise<Producto[]> => {
     const res = await api.get<RespuestaApi<Producto[]>>(`/productos${todos ? "?todos=1" : ""}`);
@@ -46,6 +53,77 @@ export const actualizarProducto = async (id: number, datos: FormData): Promise<P
 
 export const eliminarProducto = async (id: number): Promise<RespuestaApi> => {
     const res = await api.delete<RespuestaApi>(`/productos/${id}`);
+    return res.data;
+};
+
+/* =======================
+   VARIANTES (tonos)
+======================= */
+
+export type DatosVariante = {
+    tono: string;
+    color?: string | null;
+    precio: number | string;
+    precio_anterior?: number | string | null;
+    stock: number | string;
+    codigo?: string | null;
+    orden?: number;
+    estado?: boolean;
+};
+
+export const crearVariante = async (
+    idProducto: number,
+    datos: DatosVariante
+): Promise<ProductoVariante> => {
+    const res = await api.post<RespuestaApi<ProductoVariante>>(
+        `/productos/${idProducto}/variantes`,
+        datos
+    );
+    return res.data.data;
+};
+
+export const actualizarVariante = async (
+    idVariante: number,
+    datos: DatosVariante
+): Promise<ProductoVariante> => {
+    const res = await api.put<RespuestaApi<ProductoVariante>>(
+        `/productos/variantes/${idVariante}`,
+        datos
+    );
+    return res.data.data;
+};
+
+export const eliminarVariante = async (idVariante: number): Promise<RespuestaApi> => {
+    const res = await api.delete<RespuestaApi>(`/productos/variantes/${idVariante}`);
+    return res.data;
+};
+
+/* =======================
+   IMAGENES
+======================= */
+
+export const subirImagenesProducto = async (
+    idProducto: number,
+    imagenes: File[],
+    idVariante?: number | null
+): Promise<ProductoImagen[]> => {
+    const formData = new FormData();
+
+    imagenes.forEach((imagen) => formData.append("imagenes", imagen));
+
+    if (idVariante) {
+        formData.append("id_variante", String(idVariante));
+    }
+
+    const res = await api.post<RespuestaApi<ProductoImagen[]>>(
+        `/productos/${idProducto}/imagenes`,
+        formData
+    );
+    return res.data.data;
+};
+
+export const eliminarImagenProducto = async (idImagen: number): Promise<RespuestaApi> => {
+    const res = await api.delete<RespuestaApi>(`/productos/imagenes/${idImagen}`);
     return res.data;
 };
 

@@ -15,11 +15,49 @@ import {
     actualizarProducto,
     eliminarProducto,
     buscarProductoDuplicado,
+    crearVariante,
+    actualizarVariante,
+    eliminarVariante,
+    subirImagenesProducto,
+    eliminarImagenProducto,
+    type DatosVariante,
 } from "../../../services/productoService";
-import type { Categoria, Producto } from "../../../services/types";
+import type { Categoria, Producto, ProductoVariante } from "../../../services/types";
 import { rutaImagen } from "../../../services/api";
 import { toastExito, toastError } from "../../../utils/toast";
 import ProductoCard from "../../../components/ProductoCard/ProductoCard";
+
+type FormularioVariante = {
+    id_variante: number | null;
+    tono: string;
+    color: string;
+    precio: string;
+    precio_anterior: string;
+    stock: string;
+    codigo: string;
+    estado: boolean;
+    /** Ya existentes en el servidor (no se vuelven a subir) */
+    imagenesExistentes: { id_imagen: number; imagen: string }[];
+    imagenesNuevas: File[];
+    imagenesPrevia: string[];
+    /** Imagenes existentes marcadas para eliminar */
+    imagenesEliminar: number[];
+};
+
+const varianteVacia = (): FormularioVariante => ({
+    id_variante: null,
+    tono: "",
+    color: "",
+    precio: "",
+    precio_anterior: "",
+    stock: "0",
+    codigo: "",
+    estado: true,
+    imagenesExistentes: [],
+    imagenesNuevas: [],
+    imagenesPrevia: [],
+    imagenesEliminar: [],
+});
 
 type FormularioProducto = {
     nombre: string;
@@ -33,6 +71,7 @@ type FormularioProducto = {
     estado: boolean;
     destacado: boolean;
     imagen: File | null;
+    variantes: FormularioVariante[];
 };
 
 const formularioVacio: FormularioProducto = {
@@ -47,6 +86,7 @@ const formularioVacio: FormularioProducto = {
     estado: true,
     destacado: false,
     imagen: null,
+    variantes: [],
 };
 
 type Props = {
@@ -62,6 +102,7 @@ function ProductosSection({ pestana, productos, categorias, onRecargar, onNoAuto
 
     const [formulario, setFormulario] = useState<FormularioProducto>(formularioVacio);
     const [editando, setEditando] = useState<Producto | null>(null);
+    const [variantesEliminar, setVariantesEliminar] = useState<number[]>([]);
     const [mostrarForm, setMostrarForm] = useState(false);
     const [imagenPrevia, setImagenPrevia] = useState("");
     const [productoVisto, setProductoVisto] = useState<Producto | null>(null);
@@ -96,6 +137,26 @@ function ProductosSection({ pestana, productos, categorias, onRecargar, onNoAuto
             estado: Boolean(producto.estado),
             destacado: Boolean(producto.destacado),
             imagen: null,
+            variantes: (producto.variantes ?? []).map((v: ProductoVariante) => ({
+                id_variante: v.id_variante,
+                tono: v.tono,
+                color: v.color || "",
+                precio: String(v.precio ?? ""),
+                precio_anterior:
+                    v.precio_anterior !== null && v.precio_anterior !== undefined
+                        ? String(v.precio_anterior)
+                        : "",
+                stock: String(v.stock ?? "0"),
+                codigo: v.codigo || "",
+                estado: v.estado !== false,
+                imagenesExistentes: (v.imagenes ?? []).map((img) => ({
+                    id_imagen: img.id_imagen,
+                    imagen: img.imagen,
+                })),
+                imagenesNuevas: [],
+                imagenesPrevia: (v.imagenes ?? []).map((img) => rutaImagen(img.imagen)),
+                imagenesEliminar: [],
+            })),
         });
         setImagenPrevia(producto.imagen ? rutaImagen(producto.imagen) : "");
         setMostrarForm(true);
@@ -107,6 +168,7 @@ function ProductosSection({ pestana, productos, categorias, onRecargar, onNoAuto
         setEditando(null);
         setFormulario(formularioVacio);
         setImagenPrevia("");
+        setVariantesEliminar([]);
     };
 
     const cerrarVistaProducto = () => {
@@ -173,6 +235,127 @@ function ProductosSection({ pestana, productos, categorias, onRecargar, onNoAuto
         }
     };
 
+    // ------- Variantes dentro del formulario -------
+
+    const agregarVarianteForm = () => {
+        setFormulario((prev) => ({
+            ...prev,
+            variantes: [...prev.variantes, varianteVacia()],
+        }));
+    };
+
+    const cambiarVarianteForm = (
+        indice: number,
+        campo: keyof FormularioVariante,
+        valor: string | boolean
+    ) => {
+        setFormulario((prev) => ({
+            ...prev,
+            variantes: prev.variantes.map((v, i) =>
+                i === indice ? { ...v, [campo]: valor } : v
+            ),
+        }));
+    };
+
+    const eliminarVarianteForm = (indice: number) => {
+        const variante = formulario.variantes[indice];
+
+        // Variante ya guardada en el servidor: se elimina al confirmar
+        if (variante?.id_variante) {
+            setVariantesEliminar((prev) =>
+                prev.includes(variante.id_variante as number)
+                    ? prev
+                    : [...prev, variante.id_variante as number]
+            );
+        }
+
+        setFormulario((prev) => ({
+            ...prev,
+            variantes: prev.variantes.filter((_, i) => i !== indice),
+        }));
+    };
+
+    const handleImagenesVariante = (indice: number, e: ChangeEvent<HTMLInputElement>) => {
+        const archivos = Array.from(e.target.files ?? []);
+        if (archivos.length === 0) return;
+
+        const permitidas = ["jpg", "jpeg", "jpe", "jfif", "png", "gif", "webp"];
+        const validas = archivos.filter((a) => {
+            const ext = (a.name.split(".").pop() || "").toLowerCase();
+            return permitidas.includes(ext);
+        });
+
+        if (validas.length !== archivos.length) {
+            toastError("Algunas imágenes no tienen un formato soportado y se omitieron.");
+        }
+
+        setFormulario((prev) => ({
+            ...prev,
+            variantes: prev.variantes.map((v, i) =>
+                i === indice
+                    ? {
+                        ...v,
+                        imagenesNuevas: [...v.imagenesNuevas, ...validas],
+                        imagenesPrevia: [
+                            ...v.imagenesPrevia,
+                            ...validas.map((a) => URL.createObjectURL(a)),
+                        ],
+                    }
+                    : v
+            ),
+        }));
+
+        e.target.value = "";
+    };
+
+    const quitarImagenVariante = (indice: number, posicion: number) => {
+        setFormulario((prev) => ({
+            ...prev,
+            variantes: prev.variantes.map((v, i) => {
+                if (i !== indice) return v;
+
+                const existentes = v.imagenesExistentes.length;
+
+                // Si la posicion cae dentro de las existentes, se marca para borrar
+                if (posicion < existentes) {
+                    const idImagen = v.imagenesExistentes[posicion].id_imagen;
+                    return {
+                        ...v,
+                        imagenesExistentes: v.imagenesExistentes.filter((_, p) => p !== posicion),
+                        imagenesEliminar: [...v.imagenesEliminar, idImagen],
+                        imagenesPrevia: v.imagenesPrevia.filter((_, p) => p !== posicion),
+                    };
+                }
+
+                const posNueva = posicion - existentes;
+
+                return {
+                    ...v,
+                    imagenesNuevas: v.imagenesNuevas.filter((_, p) => p !== posNueva),
+                    imagenesPrevia: v.imagenesPrevia.filter((_, p) => p !== posicion),
+                };
+            }),
+        }));
+    };
+
+    // Sube las imagenes nuevas de una variante ya existente en el servidor
+    const sincronizarImagenesVariante = async (
+        idProducto: number,
+        v: FormularioVariante
+    ) => {
+        for (const idImagen of v.imagenesEliminar) {
+            try {
+                await eliminarImagenProducto(idImagen);
+            } catch {
+                // Si ya no existe, se ignora
+            }
+        }
+
+        if (v.imagenesNuevas.length > 0) {
+            await subirImagenesProducto(idProducto, v.imagenesNuevas, v.id_variante);
+        }
+    };
+
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setCargando(true);
@@ -220,12 +403,49 @@ function ProductosSection({ pestana, productos, categorias, onRecargar, onNoAuto
                 formData.append("imagen", formulario.imagen);
             }
 
+            let idProducto: number;
+
             if (editando) {
                 await actualizarProducto(editando.id_producto, formData);
+                idProducto = editando.id_producto;
                 toastExito("Producto actualizado");
             } else {
-                await crearProducto(formData);
+                const creado = await crearProducto(formData);
+                idProducto = creado.id_producto;
                 toastExito("Producto creado");
+            }
+
+            // Sincronizar variantes: crear las nuevas, actualizar las existentes
+            const datosVariante = (v: FormularioVariante): DatosVariante => ({
+                tono: v.tono.trim(),
+                color: v.color || null,
+                precio: v.precio,
+                precio_anterior: v.precio_anterior || null,
+                stock: v.stock || "0",
+                codigo: v.codigo || null,
+                estado: v.estado,
+            });
+
+            for (const v of formulario.variantes) {
+                if (!v.tono.trim()) continue;
+
+                if (v.id_variante) {
+                    await actualizarVariante(v.id_variante, datosVariante(v));
+                } else {
+                    const creada = await crearVariante(idProducto, datosVariante(v));
+                    v.id_variante = creada.id_variante;
+                }
+
+                await sincronizarImagenesVariante(idProducto, v);
+            }
+
+            // Eliminar las variantes que el administrador quitó del formulario
+            for (const idVariante of variantesEliminar) {
+                try {
+                    await eliminarVariante(idVariante);
+                } catch {
+                    // Si ya no existe, se ignora
+                }
             }
 
             cancelarForm();
@@ -467,6 +687,164 @@ function ProductosSection({ pestana, productos, categorias, onRecargar, onNoAuto
                                         <img src={imagenPrevia} alt="Vista previa" className="form-preview" />
                                     )}
                                 </label>
+                            </div>
+
+                            <div className="variantes-seccion">
+                                <div className="variantes-cab">
+                                    <h5>Variantes del producto</h5>
+                                    <button
+                                        type="button"
+                                        className="btn-variante-agregar"
+                                        onClick={agregarVarianteForm}
+                                    >
+                                        <FaPlus /> Agregar tono
+                                    </button>
+                                </div>
+
+                                <p className="variantes-ayuda">
+                                    Añade cada tono o variante con su precio, stock, código e
+                                    imágenes. El producto se registra una sola vez.
+                                </p>
+
+                                {formulario.variantes.length === 0 && (
+                                    <p className="variantes-vacio">
+                                        Este producto no tiene variantes. Se venderá como un
+                                        producto simple.
+                                    </p>
+                                )}
+
+                                {formulario.variantes.map((v, i) => (
+                                    <div className="variante-bloque" key={v.id_variante ?? `n-${i}`}>
+                                        <div className="variante-bloque-cab">
+                                            <strong>Tono {i + 1}</strong>
+
+                                            <div className="variante-bloque-acciones">
+                                                <label className="variante-activa">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={v.estado}
+                                                        onChange={(e) =>
+                                                            cambiarVarianteForm(i, "estado", e.target.checked)
+                                                        }
+                                                    />
+                                                    Activa
+                                                </label>
+
+                                                <button
+                                                    type="button"
+                                                    className="variante-quitar"
+                                                    onClick={() => eliminarVarianteForm(i)}
+                                                    title="Eliminar variante"
+                                                >
+                                                    <FaTrash />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="variante-grid">
+                                            <label>
+                                                Tono *
+                                                <input
+                                                    value={v.tono}
+                                                    onChange={(e) =>
+                                                        cambiarVarianteForm(i, "tono", e.target.value)
+                                                    }
+                                                    placeholder="Ej: Supermodel"
+                                                />
+                                            </label>
+
+                                            <label>
+                                                Color
+                                                <input
+                                                    type="color"
+                                                    value={v.color || "#cccccc"}
+                                                    onChange={(e) =>
+                                                        cambiarVarianteForm(i, "color", e.target.value)
+                                                    }
+                                                />
+                                            </label>
+
+                                            <label>
+                                                Precio (L) *
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    value={v.precio}
+                                                    onChange={(e) =>
+                                                        cambiarVarianteForm(i, "precio", e.target.value)
+                                                    }
+                                                    placeholder="0.00"
+                                                />
+                                            </label>
+
+                                            <label>
+                                                Precio anterior (L)
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    value={v.precio_anterior}
+                                                    onChange={(e) =>
+                                                        cambiarVarianteForm(i, "precio_anterior", e.target.value)
+                                                    }
+                                                    placeholder="Opcional"
+                                                />
+                                            </label>
+
+                                            <label>
+                                                Stock *
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={v.stock}
+                                                    onChange={(e) =>
+                                                        cambiarVarianteForm(i, "stock", e.target.value)
+                                                    }
+                                                    placeholder="0"
+                                                />
+                                            </label>
+
+                                            <label>
+                                                Código / SKU
+                                                <input
+                                                    value={v.codigo}
+                                                    onChange={(e) =>
+                                                        cambiarVarianteForm(i, "codigo", e.target.value)
+                                                    }
+                                                    placeholder="Opcional"
+                                                />
+                                            </label>
+
+                                            <label className="form-full">
+                                                Imágenes de este tono
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    multiple
+                                                    onChange={(e) => handleImagenesVariante(i, e)}
+                                                />
+                                            </label>
+                                        </div>
+
+                                        {v.imagenesPrevia.length > 0 && (
+                                            <div className="variante-previa">
+                                                {v.imagenesPrevia.map((src, p) => (
+                                                    <div className="variante-previa-item" key={`${src}-${p}`}>
+                                                        <img src={src} alt="" />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => quitarImagenVariante(i, p)}
+                                                            title="Quitar imagen"
+                                                        >
+                                                            <FaTimes />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
 
                             <div className="form-actions">

@@ -37,6 +37,8 @@ function ProductoCard({ producto, soloLectura = false }: Props) {
 
     const enlaceDetalle = `/producto/${producto.id_producto}`;
 
+    const tieneVariantes = (producto.variantes ?? []).length > 0;
+
     const agregarAlCarrito = () => {
         dispatch(
             ActionCarrito.agregar({
@@ -88,21 +90,30 @@ function ProductoCard({ producto, soloLectura = false }: Props) {
 
                 {!soloLectura && (
                     <>
-                        <button
-                            type="button"
-                            className={agregado ? "btn-agregar-carrito agregado" : "btn-agregar-carrito"}
-                            onClick={agregarAlCarrito}
-                        >
-                            {agregado ? (
-                                <>
-                                    <FaCheck /> ¡Agregado!
-                                </>
-                            ) : (
-                                <>
-                                    <FaCartPlus /> Agregar al carrito
-                                </>
-                            )}
-                        </button>
+                        {tieneVariantes ? (
+                            <Link
+                                to={enlaceDetalle}
+                                className="btn-agregar-carrito"
+                            >
+                                <FaCartPlus /> Ver tonos disponibles
+                            </Link>
+                        ) : (
+                            <button
+                                type="button"
+                                className={agregado ? "btn-agregar-carrito agregado" : "btn-agregar-carrito"}
+                                onClick={agregarAlCarrito}
+                            >
+                                {agregado ? (
+                                    <>
+                                        <FaCheck /> ¡Agregado!
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaCartPlus /> Agregar al carrito
+                                    </>
+                                )}
+                            </button>
+                        )}
 
                         <a href={site.whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-preguntar">
                             <FaWhatsapp /> Preguntar por este producto
