@@ -114,3 +114,108 @@ export type ItemCarrito = {
     /** Stock disponible de la variante (o del producto si no tiene) */
     stock?: number;
 };
+
+/* =======================
+   INVENTARIO Y RESPALDOS
+   ======================= */
+
+export type ResumenInventario = {
+    productosActivos: number;
+    productosStockBajo: number;
+    productosAgotados: number;
+    unidadesDisponibles: number;
+    unidadesProductosSimples: number;
+    unidadesVariantes: number;
+    itemsStockBajo: number;
+    itemsAgotados: number;
+    itemsReposicion: number;
+    variantesTotales: number;
+    /** Umbral de stock bajo aplicado en el cálculo */
+    umbral: number;
+};
+
+export type MovimientoInventario = {
+    id_movimiento: number;
+    tipo: "entrada" | "salida" | "correccion" | string;
+    id_producto: number;
+    id_variante: number | null;
+    referencia?: string | null;
+    cantidad: number;
+    stock_anterior: number;
+    stock_nuevo: number;
+    motivo?: string | null;
+    id_administrador: number | null;
+    created_at: string;
+};
+
+export type ConteosPlan = {
+    crear: number;
+    actualizar: number;
+    sinCambios: number;
+    eliminar: number;
+    protegidos?: number;
+    protegidas?: number;
+    ambiguos?: number;
+};
+
+export type PlanRestauracion = {
+    modo: string;
+    categorias: ConteosPlan;
+    productos: ConteosPlan;
+    variantes: ConteosPlan;
+    imagenes: { crear: number; actualizar: number; omitidas: number };
+    advertencias: string[];
+    detalle?: {
+        productosCrear: string[];
+        productosActualizar: string[];
+        productosEliminar: string[];
+        variantesCrear: string[];
+        variantesEliminar: string[];
+    };
+};
+
+export type MetaRespaldo = {
+    formato: string;
+    version: number;
+    generado_en: string;
+    aplicacion: string;
+    alcance: string[];
+    almacenamiento_imagenes: string;
+    imagenes_incluidas: boolean;
+    imagenes_pendientes: number;
+    nota_imagenes: string;
+};
+
+export type ValidacionRespaldo = {
+    ok: boolean;
+    mensaje: string;
+    meta: MetaRespaldo;
+    conteos: {
+        categorias: number;
+        productos: number;
+        variantes: number;
+        imagenes: number;
+    };
+    advertencias: string[];
+    errores?: string[];
+    planCombinar: PlanRestauracion;
+    planReemplazar: PlanRestauracion;
+};
+
+export type ResultadoRestauracion = {
+    ok: boolean;
+    mensaje: string;
+    modo: string;
+    resultado?: {
+        categorias: ConteosPlan;
+        productos: ConteosPlan;
+        variantes: ConteosPlan;
+        productosEliminados: number;
+        variantesEliminadas: number;
+        productosProtegidos: number;
+        variantesProtegidas: number;
+        imagenesCreadas: number;
+        imagenesRestauradas: number;
+    };
+    respaldoSeguridad?: string;
+};

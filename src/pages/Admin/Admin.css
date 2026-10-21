@@ -857,6 +857,39 @@
     color:#3a2a05;
 }
 
+.btn-stock-movimientos{
+    padding:12px 22px;
+
+    border-radius:30px;
+
+    background:#fff;
+    color:var(--primary);
+
+    border:1px solid #eadfe0;
+
+    font-size:14px;
+    font-weight:600;
+
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+
+    transition:.3s;
+}
+
+.btn-stock-movimientos:hover{
+    background:#faf3f4;
+    border-color:var(--primary);
+    color:var(--primary);
+}
+
+@media(max-width:600px){
+    .btn-stock-movimientos{
+        width:100%;
+        justify-content:center;
+    }
+}
+
 /* Reportes */
 
 .chip-oferta{
@@ -1644,6 +1677,56 @@
 .alerta-stock button:hover{
     background:var(--gold);
     color:#3a2a05;
+}
+
+/* Aviso compacto: una sola línea con el contador y el botón */
+.alerta-stock--compacto{
+    gap:10px;
+
+    padding:10px 14px;
+
+    margin-bottom:16px;
+}
+
+.alerta-stock--compacto > svg{
+    font-size:18px;
+}
+
+.alerta-stock--compacto > div{
+    flex-direction:row;
+    align-items:baseline;
+    gap:8px;
+
+    font-size:12px;
+
+    min-width:0;
+}
+
+.alerta-stock--compacto strong{
+    font-size:13px;
+    white-space:nowrap;
+}
+
+.alerta-stock--compacto span{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.alerta-stock--compacto button{
+    padding:6px 14px;
+    font-size:12px;
+}
+
+@media(max-width:768px){
+    .alerta-stock--compacto > div{
+        flex-direction:column;
+        gap:2px;
+    }
+
+    .alerta-stock--compacto span{
+        white-space:normal;
+    }
 }
 
 .btn-sonido{

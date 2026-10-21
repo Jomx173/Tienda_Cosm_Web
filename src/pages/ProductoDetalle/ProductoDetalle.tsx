@@ -16,6 +16,9 @@ import { formatearPrecio } from "../../utils/precio";
 
 import "./ProductoDetalle.css";
 
+/** Color vino de MD Beauty por defecto cuando una variante no tiene color */
+const COLOR_TONO_POR_DEFECTO = "#701522";
+
 // Una variante solo es comprable si existe, está activa y tiene stock confirmado.
 // Nunca tratamos null/undefined como disponible.
 const varianteDisponible = (v: ProductoVariante | null | undefined): boolean => {
@@ -391,12 +394,10 @@ function ProductoDetalle() {
                                                         : undefined
                                                 }
                                             >
-                                                {v.color && (
-                                                    <span
-                                                        className="detalle-tono-color"
-                                                        style={{ background: v.color }}
-                                                    />
-                                                )}
+                                                <span
+                                                    className="detalle-tono-color"
+                                                    style={{ background: v.color || COLOR_TONO_POR_DEFECTO }}
+                                                />
                                                 <span className="detalle-tono-nombre">{v.tono}</span>
                                                 {!disponible && (
                                                     <span className="detalle-tono-agotado">

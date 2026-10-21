@@ -531,6 +531,16 @@
     border-color:var(--primary);
     background:var(--primary);
     color:var(--white);
+    box-shadow:0 0 0 3px rgba(112,21,34,.18);
+}
+
+.detalle-tono.activo::after{
+    content:"";
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:var(--white);
+    flex-shrink:0;
 }
 
 .detalle-tono-color{

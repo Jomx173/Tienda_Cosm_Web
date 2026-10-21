@@ -47,6 +47,14 @@ function App() {
                     }
                 />
                 <Route
+                    path="/admin/inventario"
+                    element={
+                        <ProtectedRoute>
+                            <Admin />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
                     path="/admin/categorias"
                     element={
                         <ProtectedRoute>

@@ -1,7 +1,23 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Swal from "sweetalert2";
 
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import {
+    FaEye,
+    FaEyeSlash,
+    FaDownload,
+    FaUpload,
+    FaCheckCircle,
+    FaExclamationTriangle,
+    FaDatabase,
+    FaFileCode,
+    FaShieldAlt,
+    FaLock,
+    FaBoxOpen,
+    FaTags,
+    FaImages,
+    FaDollarSign,
+    FaSpinner,
+} from "react-icons/fa";
 
 import { toastExito, toastError } from "../../utils/toast";
 import {
@@ -11,6 +27,12 @@ import {
     getAdmin,
     guardarAdmin,
 } from "../../services/authService";
+import {
+    descargarRespaldo,
+    validarRespaldo,
+    restaurarInventario,
+} from "../../services/inventarioService";
+import type { PlanRestauracion, ValidacionRespaldo } from "../../services/types";
 
 import "./Configuracion.css";
 
@@ -45,9 +67,10 @@ const passwordVacio: PasswordForm = {
 type Props = {
     onPerfilActualizado?: () => void;
     onCerrarSesion?: () => void;
+    onInventarioRestaurado?: () => void;
 };
 
-function Configuracion({ onPerfilActualizado, onCerrarSesion }: Props) {
+function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestaurado }: Props) {
     const [cargandoPerfil, setCargandoPerfil] = useState(true);
 
     const [datosUsuario, setDatosUsuario] = useState({
@@ -62,6 +85,15 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion }: Props) {
     const [verActual, setVerActual] = useState(false);
     const [verNueva, setVerNueva] = useState(false);
     const [verConfirmar, setVerConfirmar] = useState(false);
+
+    // Copias de seguridad
+    const [descargando, setDescargando] = useState(false);
+    const [archivoRespaldo, setArchivoRespaldo] = useState<File | null>(null);
+    const [validando, setValidando] = useState(false);
+    const [validacion, setValidacion] = useState<ValidacionRespaldo | null>(null);
+    const [modoRestauracion, setModoRestauracion] = useState<"combinar" | "reemplazar">("combinar");
+    const [confirmacionRestauracion, setConfirmacionRestauracion] = useState(false);
+    const [restaurando, setRestaurando] = useState(false);
 
     useEffect(() => {
         let activo = true;
@@ -249,6 +281,140 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion }: Props) {
         </label>
     );
 
+    /* =======================
+       COPIAS DE SEGURIDAD
+    ======================= */
+
+    const handleDescargarRespaldo = async () => {
+        setDescargando(true);
+
+        try {
+            const nombre = await descargarRespaldo();
+            toastExito(`Copia descargada: ${nombre}`);
+        } catch (err) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const axiosError = err as any;
+            toastError(
+                axiosError?.response?.data?.mensaje || "No se pudo descargar la copia de seguridad"
+            );
+        } finally {
+            setDescargando(false);
+        }
+    };
+
+    const handleArchivoRespaldo = (e: ChangeEvent<HTMLInputElement>) => {
+        const archivo = e.target.files?.[0] || null;
+
+        setArchivoRespaldo(archivo);
+        setValidacion(null);
+        setConfirmacionRestauracion(false);
+    };
+
+    const handleValidarRespaldo = async () => {
+        if (!archivoRespaldo) return;
+
+        setValidando(true);
+        setValidacion(null);
+
+        try {
+            const resultado = await validarRespaldo(archivoRespaldo);
+
+            setValidacion(resultado);
+            setConfirmacionRestauracion(false);
+
+            toastExito("Archivo de respaldo válido");
+        } catch (err) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const axiosError = err as any;
+            const errores = axiosError?.response?.data?.errores;
+
+            if (Array.isArray(errores) && errores.length > 0) {
+                await Swal.fire({
+                    icon: "error",
+                    title: "El archivo no es un respaldo válido",
+                    html: errores.map((e: string) => `• ${e}`).join("<br>"),
+                    confirmButtonText: "Entendido",
+                    confirmButtonColor: "#7B1023",
+                });
+            } else {
+                toastError(
+                    axiosError?.response?.data?.mensaje || "No se pudo validar el archivo"
+                );
+            }
+        } finally {
+            setValidando(false);
+        }
+    };
+
+    const handleRestaurar = async () => {
+        if (!archivoRespaldo || !validacion) return;
+
+        const plan: PlanRestauracion =
+            modoRestauracion === "reemplazar" ? validacion.planReemplazar : validacion.planCombinar;
+
+        const confirmacion = await Swal.fire({
+            icon: modoRestauracion === "reemplazar" ? "warning" : "question",
+            title:
+                modoRestauracion === "reemplazar"
+                    ? "¿Reemplazar todo el inventario?"
+                    : "¿Restaurar el inventario?",
+            html:
+                `<strong>${validacion.conteos.productos}</strong> productos · ` +
+                `<strong>${validacion.conteos.variantes}</strong> tonos · ` +
+                `<strong>${validacion.conteos.imagenes}</strong> imágenes<br>` +
+                `Se crearán ${plan.productos.crear} y se actualizarán ${plan.productos.actualizar}.` +
+                (modoRestauracion === "reemplazar"
+                    ? `<br><span style="color:#c0392b">Se eliminarán ${plan.productos.eliminar} productos y ${plan.variantes.eliminar} tonos que no están en el archivo (excepto los que tienen pedidos).</span>`
+                    : "<br>No se eliminará nada.") +
+                "<br><br>Antes de aplicar los cambios se guarda una copia automática del estado actual.",
+            showCancelButton: true,
+            confirmButtonText: "Sí, restaurar",
+            cancelButtonText: "Cancelar",
+            confirmButtonColor: modoRestauracion === "reemplazar" ? "#c0392b" : "#7B1023",
+        });
+
+        if (!confirmacion.isConfirmed) return;
+
+        setRestaurando(true);
+
+        try {
+            const resultado = await restaurarInventario(archivoRespaldo, modoRestauracion);
+
+            await Swal.fire({
+                icon: "success",
+                title: "Inventario restaurado",
+                text:
+                    `${resultado.mensaje}` +
+                    (resultado.respaldoSeguridad
+                        ? `\nCopia de seguridad previa: ${resultado.respaldoSeguridad}`
+                        : ""),
+                confirmButtonText: "Entendido",
+                confirmButtonColor: "#7B1023",
+            });
+
+            setArchivoRespaldo(null);
+            setValidacion(null);
+            setConfirmacionRestauracion(false);
+
+            if (onInventarioRestaurado) onInventarioRestaurado();
+        } catch (err) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const axiosError = err as any;
+            toastError(
+                axiosError?.response?.data?.mensaje ||
+                    "No se pudo restaurar el inventario. No se modificó nada."
+            );
+        } finally {
+            setRestaurando(false);
+        }
+    };
+
+    const planActual: PlanRestauracion | null = validacion
+        ? modoRestauracion === "reemplazar"
+            ? validacion.planReemplazar
+            : validacion.planCombinar
+        : null;
+
     return (
         <div className="configuracion">
             <div className="configuracion-grid">
@@ -322,6 +488,295 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion }: Props) {
                     </form>
                 </section>
             </div>
+
+            {/* =======================
+                COPIAS DE SEGURIDAD
+            ======================= */}
+            <section className="configuracion-card configuracion-card--ancho respaldo-panel">
+                <header className="respaldo-panel-cabecera">
+                    <span className="respaldo-panel-icono">
+                        <FaDatabase />
+                    </span>
+
+                    <div>
+                        <h4>Copias de seguridad</h4>
+                        <p>
+                            Respalda el catálogo de MD Beauty y recupéralo cuando lo necesites, sin
+                            perder productos ni tonos.
+                        </p>
+                    </div>
+                </header>
+
+                <div className="respaldo-cards">
+                    <article className="respaldo-card">
+                        <div className="respaldo-card-cabecera">
+                            <span className="respaldo-icono-badge">
+                                <FaDatabase />
+                            </span>
+
+                            <div>
+                                <h5>Copias de seguridad</h5>
+                                <p>Descarga el catálogo actual en un archivo .json.</p>
+                            </div>
+                        </div>
+
+                        <ul className="respaldo-incluye">
+                            <li>
+                                <FaBoxOpen />
+                                <span>
+                                    <strong>Productos y tonos</strong>
+                                    con sus códigos
+                                </span>
+                            </li>
+                            <li>
+                                <FaDollarSign />
+                                <span>
+                                    <strong>Precios y stock</strong>
+                                    de cada referencia
+                                </span>
+                            </li>
+                            <li>
+                                <FaTags />
+                                <span>
+                                    <strong>Categorías</strong>
+                                    del catálogo
+                                </span>
+                            </li>
+                            <li>
+                                <FaImages />
+                                <span>
+                                    <strong>Imágenes</strong>
+                                    de los productos
+                                </span>
+                            </li>
+                        </ul>
+
+                        <div className="respaldo-acciones">
+                            <button
+                                type="button"
+                                className="btn-guardar respaldo-btn-descargar"
+                                onClick={handleDescargarRespaldo}
+                                disabled={descargando}
+                            >
+                                <FaDownload /> {descargando ? "Preparando copia..." : "Descargar copia de seguridad"}
+                            </button>
+                        </div>
+
+                        <p className="respaldo-seguridad">
+                            <FaLock /> El archivo no incluye contraseñas, tokens de acceso ni datos
+                            de los administradores.
+                        </p>
+                    </article>
+
+                    <article className="respaldo-card respaldo-card--carga">
+                        <div className="respaldo-card-cabecera">
+                            <span className="respaldo-icono-badge respaldo-icono-badge--rosa">
+                                <FaUpload />
+                            </span>
+
+                            <div>
+                                <h5>Restaurar desde un archivo</h5>
+                                <p>El sistema valida el archivo antes de modificar cualquier dato.</p>
+                            </div>
+                        </div>
+
+                        <div className="respaldo-carga">
+                            <label className="respaldo-dropzone">
+                                <input
+                                    type="file"
+                                    accept=".json,application/json"
+                                    onChange={handleArchivoRespaldo}
+                                    aria-label="Archivo de respaldo"
+                                />
+
+                                <FaFileCode className="respaldo-dropzone-icono" />
+
+                                <span className="respaldo-dropzone-texto">
+                                    <strong>
+                                        {archivoRespaldo
+                                            ? archivoRespaldo.name
+                                            : "Selecciona el archivo .json"}
+                                    </strong>
+
+                                    <small>
+                                        {archivoRespaldo
+                                            ? `${(archivoRespaldo.size / 1024).toFixed(1)} KB · listo para validar`
+                                            : "Búscalo en este equipo para revisar su contenido"}
+                                    </small>
+                                </span>
+                            </label>
+
+                            <button
+                                type="button"
+                                className="btn-cancelar respaldo-btn-validar"
+                                onClick={handleValidarRespaldo}
+                                disabled={!archivoRespaldo || validando}
+                            >
+                                {validando ? (
+                                    <FaSpinner className="respaldo-spinner" />
+                                ) : (
+                                    <FaCheckCircle />
+                                )}{" "}
+                                {validando
+                                    ? "Validando..."
+                                    : validacion
+                                      ? "Validar de nuevo"
+                                      : "Validar archivo"}
+                            </button>
+                        </div>
+
+                        <ul className="respaldo-comprobaciones">
+                            <li className={validacion ? "comprobado" : ""}>
+                                <FaCheckCircle /> Formato y versión del archivo
+                            </li>
+                            <li className={validacion ? "comprobado" : ""}>
+                                <FaCheckCircle /> Integridad de los datos
+                            </li>
+                            <li className={validacion ? "comprobado" : ""}>
+                                <FaCheckCircle /> Resumen de los cambios
+                            </li>
+                            <li className="comprobado">
+                                <FaShieldAlt /> Pedidos y usuarios protegidos
+                            </li>
+                        </ul>
+                    </article>
+                </div>
+
+                {validacion && (
+                    <div className="respaldo-preview">
+                        <div className="respaldo-preview-cabecera">
+                            <FaCheckCircle className="respaldo-ok" />
+                            <div>
+                                <strong>Archivo válido</strong>
+                                <span>
+                                    {validacion.conteos.productos} productos ·{" "}
+                                    {validacion.conteos.variantes} tonos ·{" "}
+                                    {validacion.conteos.categorias} categorías ·{" "}
+                                    {validacion.conteos.imagenes} imágenes
+                                </span>
+                            </div>
+                        </div>
+
+                        {validacion.meta?.nota_imagenes && (
+                            <p className="respaldo-nota">{validacion.meta.nota_imagenes}</p>
+                        )}
+
+                        <div className="respaldo-modos">
+                            <label className={modoRestauracion === "combinar" ? "activo" : ""}>
+                                <input
+                                    type="radio"
+                                    name="modo-restauracion"
+                                    value="combinar"
+                                    checked={modoRestauracion === "combinar"}
+                                    onChange={() => setModoRestauracion("combinar")}
+                                />
+                                <strong>Combinar</strong>
+                                <span>
+                                    Actualiza lo que coincide y agrega lo que falta. No elimina nada.
+                                </span>
+                            </label>
+
+                            <label className={modoRestauracion === "reemplazar" ? "activo" : ""}>
+                                <input
+                                    type="radio"
+                                    name="modo-restauracion"
+                                    value="reemplazar"
+                                    checked={modoRestauracion === "reemplazar"}
+                                    onChange={() => setModoRestauracion("reemplazar")}
+                                />
+                                <strong>Reemplazar</strong>
+                                <span>
+                                    Deja el inventario igual que el archivo. Los productos con
+                                    pedidos asociados se conservan.
+                                </span>
+                            </label>
+                        </div>
+
+                        {planActual && (
+                            <div className="respaldo-plan">
+                                <div>
+                                    <span>Productos a crear</span>
+                                    <strong>{planActual.productos.crear}</strong>
+                                </div>
+                                <div>
+                                    <span>Productos a actualizar</span>
+                                    <strong>{planActual.productos.actualizar}</strong>
+                                </div>
+                                <div>
+                                    <span>Productos a eliminar</span>
+                                    <strong className={planActual.productos.eliminar > 0 ? "peligro" : ""}>
+                                        {planActual.productos.eliminar}
+                                    </strong>
+                                </div>
+                                {(planActual.productos.ambiguos ?? 0) > 0 && (
+                                    <div>
+                                        <span>Conservados por nombre repetido</span>
+                                        <strong>{planActual.productos.ambiguos}</strong>
+                                    </div>
+                                )}
+                                <div>
+                                    <span>Tonos a crear</span>
+                                    <strong>{planActual.variantes.crear}</strong>
+                                </div>
+                                <div>
+                                    <span>Tonos a eliminar</span>
+                                    <strong className={planActual.variantes.eliminar > 0 ? "peligro" : ""}>
+                                        {planActual.variantes.eliminar}
+                                    </strong>
+                                </div>
+                                <div>
+                                    <span>Imágenes a recuperar</span>
+                                    <strong>{planActual.imagenes.crear}</strong>
+                                </div>
+                            </div>
+                        )}
+
+                        {planActual && planActual.advertencias.length > 0 && (
+                            <ul className="respaldo-advertencias">
+                                {planActual.advertencias.map((a) => (
+                                    <li key={a}>{a}</li>
+                                ))}
+                            </ul>
+                        )}
+
+                        {validacion.advertencias && validacion.advertencias.length > 0 && (
+                            <ul className="respaldo-advertencias">
+                                {validacion.advertencias.map((a) => (
+                                    <li key={a}>{a}</li>
+                                ))}
+                            </ul>
+                        )}
+
+                        {modoRestauracion === "reemplazar" && (
+                            <p className="respaldo-peligro">
+                                <FaExclamationTriangle /> El modo reemplazar elimina los productos
+                                y tonos que no estén en el archivo. Antes de aplicar los cambios se
+                                guarda una copia automática de seguridad.
+                            </p>
+                        )}
+
+                        <label className="respaldo-confirmacion">
+                            <input
+                                type="checkbox"
+                                checked={confirmacionRestauracion}
+                                onChange={(e) => setConfirmacionRestauracion(e.target.checked)}
+                            />
+                            Confirmo que revisé el resumen y deseo restaurar el inventario.
+                        </label>
+
+                        <div className="form-actions">
+                            <button
+                                type="button"
+                                className="btn-guardar"
+                                onClick={handleRestaurar}
+                                disabled={!confirmacionRestauracion || restaurando}
+                            >
+                                {restaurando ? "Restaurando..." : "Restaurar inventario"}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </section>
         </div>
     );
 }

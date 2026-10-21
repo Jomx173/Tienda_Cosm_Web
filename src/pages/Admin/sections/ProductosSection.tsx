@@ -8,6 +8,7 @@ import {
     FaEye,
     FaSearch,
     FaTimes,
+    FaBoxes,
 } from "react-icons/fa";
 
 import {
@@ -44,10 +45,13 @@ type FormularioVariante = {
     imagenesEliminar: number[];
 };
 
+/** Color vino de MD Beauty por defecto para nuevas variantes */
+const COLOR_VARIANTE_POR_DEFECTO = "#701522";
+
 const varianteVacia = (): FormularioVariante => ({
     id_variante: null,
     tono: "",
-    color: "",
+    color: COLOR_VARIANTE_POR_DEFECTO,
     precio: "",
     precio_anterior: "",
     stock: "0",
@@ -95,9 +99,17 @@ type Props = {
     categorias: Categoria[];
     onRecargar: () => Promise<void>;
     onNoAutorizado: (err: unknown) => void;
+    onVerStock?: () => void;
 };
 
-function ProductosSection({ pestana, productos, categorias, onRecargar, onNoAutorizado }: Props) {
+function ProductosSection({
+    pestana,
+    productos,
+    categorias,
+    onRecargar,
+    onNoAutorizado,
+    onVerStock,
+}: Props) {
     const navegar = useNavigate();
 
     const [formulario, setFormulario] = useState<FormularioProducto>(formularioVacio);
@@ -140,7 +152,7 @@ function ProductosSection({ pestana, productos, categorias, onRecargar, onNoAuto
             variantes: (producto.variantes ?? []).map((v: ProductoVariante) => ({
                 id_variante: v.id_variante,
                 tono: v.tono,
-                color: v.color || "",
+                color: v.color || COLOR_VARIANTE_POR_DEFECTO,
                 precio: String(v.precio ?? ""),
                 precio_anterior:
                     v.precio_anterior !== null && v.precio_anterior !== undefined
@@ -518,6 +530,18 @@ function ProductosSection({ pestana, productos, categorias, onRecargar, onNoAuto
                     <button className="btn-nuevo" onClick={abrirNuevo}>
                         <FaPlus /> Nuevo producto
                     </button>
+
+                    {onVerStock && (
+                        <button
+                            type="button"
+                            className="btn-stock-movimientos"
+                            onClick={onVerStock}
+                            title="Ver el stock de todas las referencias y el historial de movimientos"
+                        >
+                            <FaBoxes /> Stock y movimientos
+                        </button>
+                    )}
+
                     <div className="admin-busqueda">
                         <FaSearch className="admin-busqueda-icono" />
                         <input
@@ -802,17 +826,6 @@ function ProductosSection({ pestana, productos, categorias, onRecargar, onNoAuto
                                                         cambiarVarianteForm(i, "stock", e.target.value)
                                                     }
                                                     placeholder="0"
-                                                />
-                                            </label>
-
-                                            <label>
-                                                Código / SKU
-                                                <input
-                                                    value={v.codigo}
-                                                    onChange={(e) =>
-                                                        cambiarVarianteForm(i, "codigo", e.target.value)
-                                                    }
-                                                    placeholder="Opcional"
                                                 />
                                             </label>
 
