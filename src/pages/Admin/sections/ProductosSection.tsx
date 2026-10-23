@@ -5,10 +5,7 @@ import {
     FaPlus,
     FaEdit,
     FaTrash,
-    FaEye,
-    FaSearch,
     FaTimes,
-    FaBoxes,
 } from "react-icons/fa";
 
 import {
@@ -27,6 +24,7 @@ import type { Categoria, Producto, ProductoVariante } from "../../../services/ty
 import { rutaImagen } from "../../../services/api";
 import { toastExito, toastError } from "../../../utils/toast";
 import ProductoCard from "../../../components/ProductoCard/ProductoCard";
+import ProductosInventario from "./ProductosInventario";
 
 type FormularioVariante = {
     id_variante: number | null;
@@ -99,7 +97,6 @@ type Props = {
     categorias: Categoria[];
     onRecargar: () => Promise<void>;
     onNoAutorizado: (err: unknown) => void;
-    onVerStock?: () => void;
 };
 
 function ProductosSection({
@@ -108,7 +105,6 @@ function ProductosSection({
     categorias,
     onRecargar,
     onNoAutorizado,
-    onVerStock,
 }: Props) {
     const navegar = useNavigate();
 
@@ -118,7 +114,6 @@ function ProductosSection({
     const [mostrarForm, setMostrarForm] = useState(false);
     const [imagenPrevia, setImagenPrevia] = useState("");
     const [productoVisto, setProductoVisto] = useState<Producto | null>(null);
-    const [busqueda, setBusqueda] = useState("");
     const [cargando, setCargando] = useState(false);
 
     const abrirNuevo = () => {
@@ -372,28 +367,51 @@ function ProductosSection({
         e.preventDefault();
         setCargando(true);
 
-        try {
-            const duplicado = await buscarProductoDuplicado({
-                nombre: formulario.nombre,
-                id_categoria: formulario.id_categoria,
-                subcategoria: formulario.subcategoria || "",
-                excluir: editando?.id_producto,
-            });
+        // Bandera para saber si el producto base ya fue guardado
+        let productoBaseGuardado = false;
 
-            if (duplicado) {
-                const continuar = await Swal.fire({
-                    icon: "warning",
-                    title: "Posible producto duplicado",
-                    html: `⚠️ Ya existe un producto similar: <strong>'${duplicado.nombre}'</strong> (${duplicado.categoria?.nombre || duplicado.categoria || ""}${duplicado.subcategoria ? ` / ${duplicado.subcategoria}` : ""}).<br><br>¿Quieres continuar de todas formas?`,
-                    showCancelButton: true,
-                    confirmButtonText: "Sí, crear de todas formas",
-                    cancelButtonText: "Cancelar y revisar",
-                    confirmButtonColor: "#7B1023",
-                    cancelButtonColor: "#8A7A63",
+        try {
+            // Comprobación de duplicados: solo para endpoints opcionales ausentes (404)
+            try {
+                const duplicado = await buscarProductoDuplicado({
+                    nombre: formulario.nombre,
+                    id_categoria: formulario.id_categoria,
+                    subcategoria: formulario.subcategoria || "",
+                    excluir: editando?.id_producto,
                 });
 
-                if (!continuar.isConfirmed) {
-                    return;
+                if (duplicado) {
+                    const continuar = await Swal.fire({
+                        icon: "warning",
+                        title: "Posible producto duplicado",
+                        html: `⚠️ Ya existe un producto similar: <strong>'${duplicado.nombre}'</strong> (${duplicado.categoria?.nombre || duplicado.categoria || ""}${duplicado.subcategoria ? ` / ${duplicado.subcategoria}` : ""}).<br><br>¿Quieres continuar de todas formas?`,
+                        showCancelButton: true,
+                        confirmButtonText: "Sí, crear de todas formas",
+                        cancelButtonText: "Cancelar y revisar",
+                        confirmButtonColor: "#7B1023",
+                        cancelButtonColor: "#8A7A63",
+                    });
+
+                    if (!continuar.isConfirmed) {
+                        return;
+                    }
+                }
+            } catch (dupErr) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const d = dupErr as any;
+                const statusDup = d?.response?.status;
+                // Solo degradar si el endpoint no existe (404). NO ignorar 401/403/500/errores de validación
+                if (statusDup === 404) {
+                    toastError("No fue posible comprobar duplicados (función no disponible con la API actual).");
+                } else if (statusDup === 401 || statusDup === 403) {
+                    onNoAutorizado(dupErr);
+                    throw dupErr;
+                } else if (statusDup >= 400) {
+                    // Errores reales/validación: no continuar silenciosamente
+                    throw dupErr;
+                } else {
+                    // Error de red sin respuesta
+                    throw dupErr;
                 }
             }
 
@@ -420,14 +438,16 @@ function ProductosSection({
             if (editando) {
                 await actualizarProducto(editando.id_producto, formData);
                 idProducto = editando.id_producto;
+                productoBaseGuardado = true;
                 toastExito("Producto actualizado");
             } else {
                 const creado = await crearProducto(formData);
                 idProducto = creado.id_producto;
+                productoBaseGuardado = true;
                 toastExito("Producto creado");
             }
 
-            // Sincronizar variantes: crear las nuevas, actualizar las existentes
+            // Sincronizar variantes: crear las nuevas, actualizar las existentes (SOLO si hay variantes o si hay que eliminar)
             const datosVariante = (v: FormularioVariante): DatosVariante => ({
                 tono: v.tono.trim(),
                 color: v.color || null,
@@ -438,31 +458,113 @@ function ProductosSection({
                 estado: v.estado,
             });
 
-            for (const v of formulario.variantes) {
-                if (!v.tono.trim()) continue;
+            let variantesFallidas = false;
+            const hayVariantes = formulario.variantes.some((v) => v.tono.trim());
+            const hayVariantesEliminar = variantesEliminar.length > 0;
 
-                if (v.id_variante) {
-                    await actualizarVariante(v.id_variante, datosVariante(v));
-                } else {
-                    const creada = await crearVariante(idProducto, datosVariante(v));
-                    v.id_variante = creada.id_variante;
+            if (hayVariantes || hayVariantesEliminar) {
+                try {
+                    for (const v of formulario.variantes) {
+                        if (!v.tono.trim()) continue;
+
+                        try {
+                            if (v.id_variante) {
+                                await actualizarVariante(v.id_variante, datosVariante(v));
+                            } else {
+                                const creada = await crearVariante(idProducto, datosVariante(v));
+                                v.id_variante = creada.id_variante;
+                            }
+
+                            // Sincronizar imágenes por variante
+                            try {
+                                await sincronizarImagenesVariante(idProducto, v);
+                            } catch (imgErr) {
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                const ie = imgErr as any;
+                                const st = ie?.response?.status;
+                                if (st === 404) {
+                                    variantesFallidas = true;
+                                    // No afirmamos que se guardaron
+                                } else {
+                                    variantesFallidas = true;
+                                    throw imgErr;
+                                }
+                            }
+                        } catch (varErr) {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            const ve = varErr as any;
+                            const sv = ve?.response?.status;
+                            if (sv === 404) {
+                                variantesFallidas = true;
+                                // Endpoints de variantes no disponibles con API antigua - NO reintentar
+                                continue;
+                            } else if (sv === 401 || sv === 403) {
+                                onNoAutorizado(varErr);
+                                throw varErr;
+                            } else {
+                                variantesFallidas = true;
+                                throw varErr;
+                            }
+                        }
+                    }
+
+                    // Eliminar las variantes que el administrador quitó del formulario
+                    for (const idVariante of variantesEliminar) {
+                        try {
+                            await eliminarVariante(idVariante);
+                        } catch (delVarErr) {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            const dve = delVarErr as any;
+                            const sdv = dve?.response?.status;
+                            if (sdv === 404) {
+                                variantesFallidas = true;
+                                continue;
+                            } else if (sdv === 401 || sdv === 403) {
+                                onNoAutorizado(delVarErr);
+                                throw delVarErr;
+                            }
+                            // Si ya no existe, se ignora; otros errores reales se marcan
+                            variantesFallidas = true;
+                        }
+                    }
+                } catch (syncErr) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const se = syncErr as any;
+                    const sse = se?.response?.status;
+                    if (sse === 401 || sse === 403) {
+                        onNoAutorizado(syncErr);
+                        // El producto base ya fue guardado, informar claramente
+                        toastError("El producto base se guardó correctamente, pero no fue posible completar la sincronización por un problema de autorización. Las variantes/imágenes no se sincronizaron.");
+                        cancelarForm();
+                        await onRecargar();
+                        return;
+                    }
+                    // Error real no-404
+                    variantesFallidas = true;
+                    throw syncErr;
                 }
-
-                await sincronizarImagenesVariante(idProducto, v);
             }
 
-            // Eliminar las variantes que el administrador quitó del formulario
-            for (const idVariante of variantesEliminar) {
-                try {
-                    await eliminarVariante(idVariante);
-                } catch {
-                    // Si ya no existe, se ignora
-                }
+            if (variantesFallidas && (hayVariantes || hayVariantesEliminar)) {
+                toastError("El producto base se guardó correctamente, pero las variantes/imágenes todavía no pudieron sincronizarse con la API actual.");
             }
 
             cancelarForm();
             await onRecargar();
         } catch (err) {
+            // Si el producto base YA fue guardado, NO mostrar error genérico de fallo total
+            if (productoBaseGuardado) {
+                onNoAutorizado(err);
+                toastError("El producto base se guardó correctamente, pero ocurrió un error durante la sincronización posterior de variantes/imágenes. Las variantes no se garantizan guardadas.");
+                try {
+                    cancelarForm();
+                    await onRecargar();
+                } catch {
+                    // Ignorar errores secundarios
+                }
+                return;
+            }
+
             onNoAutorizado(err);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const axiosError = err as any;
@@ -497,73 +599,12 @@ function ProductosSection({
         }
     };
 
-    const terminoBusqueda = busqueda.trim().toLowerCase();
-
-    const productosFiltrados = terminoBusqueda
-        ? productos.filter((p) => {
-              const coincideNombre = (p.nombre || "").toLowerCase().includes(terminoBusqueda);
-              const coincideCategoria = (p.categoria?.nombre || "")
-                  .toLowerCase()
-                  .includes(terminoBusqueda);
-              const coincideCodigo = (p.codigo || "").toLowerCase().includes(terminoBusqueda);
-              const coincideSubcategoria = (p.subcategoria || "")
-                  .toLowerCase()
-                  .includes(terminoBusqueda);
-
-              return (
-                  coincideNombre ||
-                  coincideCategoria ||
-                  coincideCodigo ||
-                  coincideSubcategoria
-              );
-          })
-        : productos;
-
     const productosOferta = productos.filter(
         (p) => p.precio_anterior && Number(p.precio_anterior) > Number(p.precio)
     );
 
     return (
         <>
-            {pestana === "productos" && (
-                <div className="admin-toolbar">
-                    <button className="btn-nuevo" onClick={abrirNuevo}>
-                        <FaPlus /> Nuevo producto
-                    </button>
-
-                    {onVerStock && (
-                        <button
-                            type="button"
-                            className="btn-stock-movimientos"
-                            onClick={onVerStock}
-                            title="Ver el stock de todas las referencias y el historial de movimientos"
-                        >
-                            <FaBoxes /> Stock y movimientos
-                        </button>
-                    )}
-
-                    <div className="admin-busqueda">
-                        <FaSearch className="admin-busqueda-icono" />
-                        <input
-                            type="text"
-                            value={busqueda}
-                            onChange={(e) => setBusqueda(e.target.value)}
-                            placeholder="Buscar por nombre, categoría o código..."
-                        />
-                        {busqueda && (
-                            <button
-                                type="button"
-                                className="admin-busqueda-limpiar"
-                                onClick={() => setBusqueda("")}
-                                title="Limpiar búsqueda"
-                            >
-                                <FaTimes />
-                            </button>
-                        )}
-                    </div>
-                </div>
-            )}
-
             {pestana === "ofertas" && (
                 <>
                     <div className="admin-toolbar">
@@ -952,126 +993,73 @@ function ProductosSection({
                 </div>
             )}
 
-            <div className="admin-table">
-                <table>
-                    <thead>
-                        <tr>
-                            {pestana === "productos" ? (
-                                <>
-                                    <th>Imagen</th>
-                                    <th>Nombre</th>
-                                    <th>Categoría</th>
-                                    <th>Subcategoría</th>
-                                    <th>Precio</th>
-                                    <th>Stock</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </>
-                            ) : (
-                                <>
-                                    <th>Imagen</th>
-                                    <th>Nombre</th>
-                                    <th>Precio</th>
-                                    <th>Antes</th>
-                                    <th>Descuento</th>
-                                    <th>Stock</th>
-                                    <th>Acciones</th>
-                                </>
-                            )}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {pestana === "productos"
-                            ? productosFiltrados.map((p) => (
-                                  <tr key={p.id_producto} className={!p.estado ? "fila-inactiva" : ""}>
-                                      <td>
-                                          {p.imagen ? (
-                                              <img src={rutaImagen(p.imagen)} alt={p.nombre} className="tabla-img" />
-                                          ) : (
-                                              <span className="sin-imagen">—</span>
-                                          )}
-                                      </td>
-                                      <td>
-                                          {p.nombre}
-                                          {p.destacado && (
-                                              <span className="badge-nuevo-tabla">Nuevo</span>
-                                          )}
-                                      </td>
-                                      <td>{p.categoria?.nombre || "—"}</td>
-                                      <td>{p.subcategoria || "—"}</td>
-                                      <td>
-                                          L {p.precio}
-                                          {p.precio_anterior && (
-                                              <span className="precio-tachado"> L {p.precio_anterior}</span>
-                                          )}
-                                      </td>
-                                      <td>{p.stock}</td>
-                                      <td>
-                                          <span className={p.estado ? "chip-activo" : "chip-inactivo"}>
-                                              {p.estado ? "Activo" : "Deshabilitado"}
-                                          </span>
-                                      </td>
-                                      <td className="acciones">
-                                          <button onClick={() => abrirEdicion(p)} title="Editar">
-                                              <FaEdit />
-                                          </button>
-                                          <button className="accion-ver" onClick={() => setProductoVisto(p)} title="Ver">
-                                              <FaEye />
-                                          </button>
-                                          <button onClick={() => handleEliminar(p)} title="Eliminar">
-                                              <FaTrash />
-                                          </button>
-                                      </td>
-                                  </tr>
-                              ))
-                            : productosOferta.map((p) => {
-                                  const descuento = Math.round(
-                                      ((Number(p.precio_anterior) - Number(p.precio)) /
-                                          Number(p.precio_anterior)) *
-                                          100
-                                  );
+            {pestana === "productos" ? (
+                <ProductosInventario
+                    productos={productos}
+                    categorias={categorias}
+                    onRecargar={onRecargar}
+                    onNoAutorizado={onNoAutorizado}
+                    onNuevo={abrirNuevo}
+                    onEditar={abrirEdicion}
+                    onEliminar={handleEliminar}
+                    onVer={setProductoVisto}
+                />
+            ) : (
+                <div className="admin-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Imagen</th>
+                                <th>Nombre</th>
+                                <th>Precio</th>
+                                <th>Antes</th>
+                                <th>Descuento</th>
+                                <th>Stock</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {productosOferta.map((p) => {
+                                const descuento = Math.round(
+                                    ((Number(p.precio_anterior) - Number(p.precio)) /
+                                        Number(p.precio_anterior)) *
+                                        100
+                                );
 
-                                  return (
-                                      <tr key={p.id_producto}>
-                                          <td>
-                                              {p.imagen ? (
-                                                  <img src={rutaImagen(p.imagen)} alt={p.nombre} className="tabla-img" />
-                                              ) : (
-                                                  <span className="sin-imagen">—</span>
-                                              )}
-                                          </td>
-                                          <td>{p.nombre}</td>
-                                          <td>L {p.precio}</td>
-                                          <td>
-                                              <span className="precio-tachado">L {p.precio_anterior}</span>
-                                          </td>
-                                          <td>
-                                              <span className="chip-oferta">-{descuento}%</span>
-                                          </td>
-                                          <td>{p.stock}</td>
-                                          <td className="acciones">
-                                              <button onClick={() => abrirEdicion(p)} title="Editar">
-                                                  <FaEdit />
-                                              </button>
-                                          </td>
-                                      </tr>
-                                  );
-                              })}
-                    </tbody>
-                </table>
+                                return (
+                                    <tr key={p.id_producto}>
+                                        <td>
+                                            {p.imagen ? (
+                                                <img src={rutaImagen(p.imagen)} alt={p.nombre} className="tabla-img" />
+                                            ) : (
+                                                <span className="sin-imagen">—</span>
+                                            )}
+                                        </td>
+                                        <td>{p.nombre}</td>
+                                        <td>L {p.precio}</td>
+                                        <td>
+                                            <span className="precio-tachado">L {p.precio_anterior}</span>
+                                        </td>
+                                        <td>
+                                            <span className="chip-oferta">-{descuento}%</span>
+                                        </td>
+                                        <td>{p.stock}</td>
+                                        <td className="acciones">
+                                            <button onClick={() => abrirEdicion(p)} title="Editar">
+                                                <FaEdit />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
 
-                {pestana === "productos"
-                    ? productosFiltrados.length === 0 && (
-                          <p className="sin-productos">
-                              {terminoBusqueda
-                                  ? "No se encontraron productos con esa búsqueda."
-                                  : "Aún no hay productos. Crea el primero."}
-                          </p>
-                      )
-                    : productosOferta.length === 0 && (
-                          <p className="sin-productos">Aún no hay ofertas activas.</p>
-                      )}
-            </div>
+                    {productosOferta.length === 0 && (
+                        <p className="sin-productos">Aún no hay ofertas activas.</p>
+                    )}
+                </div>
+            )}
         </>
     );
 }

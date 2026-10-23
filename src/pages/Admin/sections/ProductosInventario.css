@@ -1,8 +1,8 @@
 /* =========================
-   INVENTARIO Y STOCK
+   PRODUCTOS: RESUMEN Y STOCK
    ========================= */
 
-.inventario{
+.productos-inventario{
     display:flex;
     flex-direction:column;
     gap:18px;
@@ -118,7 +118,7 @@
 /* ---------- Tabla ---------- */
 
 .inv-tabla table{
-    min-width:820px;
+    min-width:920px;
 }
 
 .inv-tag{
@@ -172,6 +172,10 @@
     color:#c0392b;
 }
 
+.inv-stock--deshabilitado{
+    color:#8a7a63;
+}
+
 .chip-estado.disponible{
     background:#e6f7ee;
     color:#1e7e45;
@@ -190,9 +194,21 @@
     border-color:#f5c6cb;
 }
 
+.chip-estado.deshabilitado{
+    background:#f2f0f1;
+    color:#8a7a63;
+    border-color:#e3d5d8;
+}
+
 .inv-total{
     font-size:12px;
     color:#999;
+}
+
+.inv-acciones{
+    display:flex;
+    align-items:center;
+    gap:6px;
 }
 
 /* ---------- Historial ---------- */
@@ -227,6 +243,17 @@
 
 .inv-historial-boton:hover{
     background:#f9eef0;
+}
+
+.inv-aviso-api{
+    padding:10px 14px;
+
+    background:#fff8e1;
+    border:1px solid #ffe69c;
+    border-radius:10px;
+
+    color:#856404;
+    font-size:13px;
 }
 
 .inv-mov{

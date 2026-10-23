@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Home from "./pages/Home/Home";
 import Login from "./pages/Login/Login";
@@ -48,11 +48,7 @@ function App() {
                 />
                 <Route
                     path="/admin/inventario"
-                    element={
-                        <ProtectedRoute>
-                            <Admin />
-                        </ProtectedRoute>
-                    }
+                    element={<Navigate to="/admin/productos" replace />}
                 />
                 <Route
                     path="/admin/categorias"

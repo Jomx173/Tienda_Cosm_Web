@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 
@@ -8,7 +8,6 @@ import {
     FaTags,
     FaImages,
     FaShoppingBag,
-    FaExclamationTriangle,
     FaBell,
     FaVolumeUp,
     FaVolumeMute,
@@ -33,10 +32,6 @@ import { obtenerPedidos } from "../../services/pedidoService";
 import type { Banner, Categoria, Pedido, Producto } from "../../services/types";
 import logo from "../../assets/logo/logo.png";
 import { formatearPrecio } from "../../utils/precio";
-import {
-    construirItemsInventario,
-    estadoInventario,
-} from "../../utils/inventario";
 import Dashboard from "./Dashboard";
 import Reportes from "./Reportes";
 import Configuracion from "./Configuracion";
@@ -44,7 +39,6 @@ import ProductosSection from "./sections/ProductosSection";
 import CategoriasSection from "./sections/CategoriasSection";
 import BannersSection from "./sections/BannersSection";
 import PedidosSection from "./sections/PedidosSection";
-import InventarioSection from "./sections/InventarioSection";
 
 import { useDispatch, useSelector } from "../../store";
 import { Action as ActionAuth } from "../../store/slices/Auth";
@@ -65,15 +59,10 @@ const MENU = [
 
 const RUTA_POR_ID: Record<string, string> = Object.fromEntries(MENU.map((m) => [m.id, m.ruta]));
 
-// La vista de stock no es una opción del menú: se abre desde el aviso de stock bajo
-// y desde la barra de productos, donde se gestiona el stock de cada referencia.
-const RUTA_STOCK = "/admin/inventario";
-
 const ID_POR_RUTA: Record<string, string> = {
     "/admin": "dashboard",
     "/admin/dashboard": "dashboard",
     "/admin/productos": "productos",
-    "/admin/inventario": "inventario",
     "/admin/categorias": "categorias",
     "/admin/ofertas": "ofertas",
     "/admin/pedidos": "pedidos",
@@ -85,7 +74,6 @@ const ID_POR_RUTA: Record<string, string> = {
 const TITULOS_SECCION: Record<string, string> = {
     dashboard: "Dashboard",
     productos: "Productos",
-    inventario: "Inventario y stock",
     categorias: "Categorías",
     ofertas: "Ofertas y Descuentos",
     pedidos: "Pedidos",
@@ -93,8 +81,6 @@ const TITULOS_SECCION: Record<string, string> = {
     reportes: "Reportes",
     configuracion: "Configuración",
 };
-
-const MAX_AVISOS_STOCK = 3;
 
 function Admin() {
     const dispatch = useDispatch();
@@ -378,28 +364,6 @@ function Admin() {
 
     const pedidosPendientes = pedidos.filter((p) => p.estado === "pendiente");
 
-    const productosStockBajo = useMemo(() => {
-        const items = construirItemsInventario(productos);
-
-        return items
-            .filter((item) => item.estado && estadoInventario(item.stock) !== "disponible")
-            .sort((a, b) => a.stock - b.stock);
-    }, [productos]);
-
-    const avisoStock =
-        productosStockBajo.length > 0
-            ? `${productosStockBajo.length} ${
-                  productosStockBajo.length === 1 ? "referencia" : "referencias"
-              } por reponer: ${productosStockBajo
-                  .slice(0, MAX_AVISOS_STOCK)
-                  .map((item) => `${item.nombre} (${item.stock})`)
-                  .join(", ")}${
-                  productosStockBajo.length > MAX_AVISOS_STOCK
-                      ? ` y ${productosStockBajo.length - MAX_AVISOS_STOCK} más`
-                      : ""
-              }`
-            : "";
-
     const propsSeccion = {
         onRecargar: cargarDatos,
         onNoAutorizado: cerrarSesionSiNoAutorizado,
@@ -520,20 +484,6 @@ function Admin() {
                     </header>
 
                     <div className="admin-main">
-                        {pestana !== "dashboard" && productosStockBajo.length > 0 && (
-                            <div
-                                className="alerta-stock alerta-stock--compacto"
-                                onClick={() => navegar(RUTA_STOCK)}
-                            >
-                                <FaExclamationTriangle />
-                                <div>
-                                    <strong>Aviso de stock bajo</strong>
-                                    <span>{avisoStock}</span>
-                                </div>
-                                <button type="button">Ver stock</button>
-                            </div>
-                        )}
-
                         {pestana === "dashboard" && (
                             <Dashboard
                                 productos={productos}
@@ -545,15 +495,6 @@ function Admin() {
                         {(pestana === "productos" || pestana === "ofertas") && (
                             <ProductosSection
                                 pestana={pestana}
-                                productos={productos}
-                                categorias={categorias}
-                                onVerStock={() => navegar(RUTA_STOCK)}
-                                {...propsSeccion}
-                            />
-                        )}
-
-                        {pestana === "inventario" && (
-                            <InventarioSection
                                 productos={productos}
                                 categorias={categorias}
                                 {...propsSeccion}

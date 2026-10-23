@@ -8,17 +8,25 @@ import {
     FaCheckCircle,
     FaHistory,
     FaSlidersH,
+    FaPlus,
+    FaEdit,
+    FaTrash,
+    FaEye,
 } from "react-icons/fa";
 
 import { rutaImagen } from "../../../services/api";
 import {
-    obtenerResumenInventario,
     listarMovimientos,
     ajustarStock,
 } from "../../../services/inventarioService";
-import type { Categoria, MovimientoInventario, Producto, ResumenInventario } from "../../../services/types";
+import type {
+    Categoria,
+    MovimientoInventario,
+    Producto,
+} from "../../../services/types";
 import {
     STOCK_MINIMO,
+    calcularResumenStock,
     construirItemsInventario,
     estadoInventario,
     ETIQUETA_ESTADO,
@@ -26,13 +34,17 @@ import {
 } from "../../../utils/inventario";
 import { toastExito, toastError } from "../../../utils/toast";
 
-import "./InventarioSection.css";
+import "./ProductosInventario.css";
 
 type Props = {
     productos: Producto[];
     categorias: Categoria[];
     onRecargar: () => Promise<void>;
     onNoAutorizado: (err: unknown) => void;
+    onNuevo: () => void;
+    onEditar: (producto: Producto) => void;
+    onEliminar: (producto: Producto) => void;
+    onVer: (producto: Producto) => void;
 };
 
 type Filtros = {
@@ -83,10 +95,19 @@ const formatearFecha = (valor: string) => {
     });
 };
 
-function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }: Props) {
-    const [resumen, setResumen] = useState<ResumenInventario | null>(null);
+function ProductosInventario({
+    productos,
+    categorias,
+    onRecargar,
+    onNoAutorizado,
+    onNuevo,
+    onEditar,
+    onEliminar,
+    onVer,
+}: Props) {
     const [movimientos, setMovimientos] = useState<MovimientoInventario[]>([]);
-    const [cargando, setCargando] = useState(true);
+    const [historialDisponible, setHistorialDisponible] = useState(true);
+    const [actualizando, setActualizando] = useState(false);
     const [filtros, setFiltros] = useState<Filtros>(filtrosIniciales);
 
     const [ajustando, setAjustando] = useState<ItemInventario | null>(null);
@@ -95,6 +116,16 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
     const [verHistorial, setVerHistorial] = useState(false);
 
     const items = useMemo(() => construirItemsInventario(productos), [productos]);
+
+    const resumen = useMemo(
+        () => calcularResumenStock(productos, STOCK_MINIMO),
+        [productos]
+    );
+
+    const productoPorId = useMemo(
+        () => new Map(productos.map((producto) => [producto.id_producto, producto])),
+        [productos]
+    );
 
     const tonos = useMemo(() => {
         const lista = new Set<string>();
@@ -106,27 +137,37 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
         return Array.from(lista).sort();
     }, [items]);
 
-    const cargarDatos = async () => {
+    const cargarMovimientos = async () => {
         try {
-            const [res, movs] = await Promise.all([
-                obtenerResumenInventario(STOCK_MINIMO),
-                listarMovimientos(30),
-            ]);
-
-            setResumen(res);
+            const movs = await listarMovimientos(30);
             setMovimientos(movs);
+            setHistorialDisponible(true);
         } catch (err) {
-            onNoAutorizado(err);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const axiosError = err as any;
-            toastError(axiosError?.response?.data?.mensaje || "No se pudo cargar el inventario");
-        } finally {
-            setCargando(false);
+            const status = axiosError?.response?.status;
+
+            if (status === 401 || status === 403) {
+                onNoAutorizado(err);
+                return;
+            }
+
+            if (status === 404) {
+                setHistorialDisponible(false);
+                setMovimientos([]);
+                return;
+            }
+
+            onNoAutorizado(err);
+            toastError(
+                axiosError?.response?.data?.mensaje ||
+                    "No se pudo cargar el historial de movimientos"
+            );
         }
     };
 
     useEffect(() => {
-        cargarDatos();
+        void cargarMovimientos();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -146,7 +187,9 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
             if (filtros.tono !== "todos" && item.tono !== filtros.tono) return false;
 
             if (filtros.categoria !== "todas") {
-                const categoria = categorias.find((c) => String(c.id_categoria) === filtros.categoria);
+                const categoria = categorias.find(
+                    (c) => String(c.id_categoria) === filtros.categoria
+                );
                 if (!categoria || item.categoria !== categoria.nombre) return false;
             }
 
@@ -164,6 +207,11 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
             return true;
         });
     }, [items, filtros, categorias]);
+
+    const unidadesFiltradas = useMemo(
+        () => itemsFiltrados.reduce((total, item) => total + item.stock, 0),
+        [itemsFiltrados]
+    );
 
     const abrirAjuste = (item: ItemInventario) => {
         setAjustando(item);
@@ -242,14 +290,44 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
             cerrarAjuste();
 
             await onRecargar();
-            await cargarDatos();
+            await cargarMovimientos();
         } catch (err) {
-            onNoAutorizado(err);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const axiosError = err as any;
-            toastError(axiosError?.response?.data?.mensaje || "No se pudo registrar el ajuste");
+            const status = axiosError?.response?.status;
+
+            if (status === 401 || status === 403) {
+                onNoAutorizado(err);
+                return;
+            }
+
+            if (status === 404) {
+                toastError(
+                    "La API actual no permite ajustar stock. Los cambios de inventario se podrán registrar cuando la API esté actualizada."
+                );
+                return;
+            }
+
+            onNoAutorizado(err);
+            toastError(
+                axiosError?.response?.data?.mensaje ||
+                    "No se pudo registrar el ajuste"
+            );
         } finally {
             setGuardandoAjuste(false);
+        }
+    };
+
+    const handleActualizar = async () => {
+        setActualizando(true);
+
+        try {
+            await onRecargar();
+            await cargarMovimientos();
+        } catch (err) {
+            onNoAutorizado(err);
+        } finally {
+            setActualizando(false);
         }
     };
 
@@ -262,7 +340,7 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
         filtros.estado !== "todos";
 
     return (
-        <div className="inventario">
+        <div className="productos-inventario">
             {/* =======================
                 RESUMEN
             ======================= */}
@@ -270,7 +348,7 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
                 <div className="inv-resumen-card">
                     <span className="inv-resumen-icono"><FaBoxes /></span>
                     <div>
-                        <strong>{resumen?.productosActivos ?? productos.length}</strong>
+                        <strong>{resumen.productosActivos}</strong>
                         <span>Productos activos</span>
                     </div>
                 </div>
@@ -278,7 +356,7 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
                 <div className="inv-resumen-card">
                     <span className="inv-resumen-icono ok"><FaCheckCircle /></span>
                     <div>
-                        <strong>{resumen?.unidadesDisponibles ?? 0}</strong>
+                        <strong>{resumen.unidadesDisponibles}</strong>
                         <span>Unidades disponibles</span>
                     </div>
                 </div>
@@ -286,7 +364,7 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
                 <div className="inv-resumen-card">
                     <span className="inv-resumen-icono warn"><FaExclamationTriangle /></span>
                     <div>
-                        <strong>{resumen?.itemsReposicion ?? 0}</strong>
+                        <strong>{resumen.itemsReposicion}</strong>
                         <span>Por reponer</span>
                     </div>
                 </div>
@@ -294,7 +372,7 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
                 <div className="inv-resumen-card">
                     <span className="inv-resumen-icono danger"><FaExclamationTriangle /></span>
                     <div>
-                        <strong>{resumen?.itemsAgotados ?? 0}</strong>
+                        <strong>{resumen.itemsAgotados}</strong>
                         <span>Agotados</span>
                     </div>
                 </div>
@@ -302,7 +380,7 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
                 <div className="inv-resumen-card inv-resumen-card--umbral">
                     <span className="inv-resumen-icono"><FaSlidersH /></span>
                     <div>
-                        <strong>{resumen?.umbral ?? STOCK_MINIMO}</strong>
+                        <strong>{resumen.umbral}</strong>
                         <span>Umbral de stock bajo</span>
                     </div>
                 </div>
@@ -312,20 +390,28 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
                 FILTROS
             ======================= */}
             <div className="admin-toolbar inv-toolbar">
+                <button className="btn-nuevo" onClick={onNuevo}>
+                    <FaPlus /> Nuevo producto
+                </button>
+
                 <div className="admin-busqueda inv-busqueda">
                     <FaSearch className="admin-busqueda-icono" />
                     <input
                         type="text"
                         placeholder="Buscar producto, tono o categoría"
                         value={filtros.texto}
-                        onChange={(e) => setFiltros((prev) => ({ ...prev, texto: e.target.value }))}
+                        onChange={(e) =>
+                            setFiltros((prev) => ({ ...prev, texto: e.target.value }))
+                        }
                     />
                 </div>
 
                 <select
                     className="admin-filtro-select"
                     value={filtros.tono}
-                    onChange={(e) => setFiltros((prev) => ({ ...prev, tono: e.target.value }))}
+                    onChange={(e) =>
+                        setFiltros((prev) => ({ ...prev, tono: e.target.value }))
+                    }
                     aria-label="Filtrar por tono"
                 >
                     <option value="todos">Todos los tonos</option>
@@ -337,7 +423,9 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
                 <select
                     className="admin-filtro-select"
                     value={filtros.categoria}
-                    onChange={(e) => setFiltros((prev) => ({ ...prev, categoria: e.target.value }))}
+                    onChange={(e) =>
+                        setFiltros((prev) => ({ ...prev, categoria: e.target.value }))
+                    }
                     aria-label="Filtrar por categoría"
                 >
                     <option value="todas">Todas las categorías</option>
@@ -351,8 +439,10 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
                 <select
                     className="admin-filtro-select"
                     value={filtros.estado}
-                    onChange={(e) => setFiltros((prev) => ({ ...prev, estado: e.target.value }))}
-                    aria-label="Filtrar por estado de stock"
+                    onChange={(e) =>
+                        setFiltros((prev) => ({ ...prev, estado: e.target.value }))
+                    }
+                    aria-label="Filtrar por estado"
                 >
                     <option value="todos">Todos los estados</option>
                     <option value="disponible">Disponibles</option>
@@ -370,11 +460,11 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
 
                 <button
                     className="btn-nuevo inv-recargar"
-                    onClick={cargarDatos}
-                    disabled={cargando}
-                    title="Recargar inventario"
+                    onClick={handleActualizar}
+                    disabled={actualizando}
+                    title="Actualizar productos y stock"
                 >
-                    <FaSyncAlt /> Actualizar
+                    <FaSyncAlt /> {actualizando ? "Actualizando..." : "Actualizar"}
                 </button>
             </div>
 
@@ -397,6 +487,7 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
                     <tbody>
                         {itemsFiltrados.map((item) => {
                             const estado = estadoInventario(item.stock);
+                            const producto = productoPorId.get(item.id_producto);
 
                             return (
                                 <tr key={item.clave} className={!item.estado ? "fila-inactiva" : ""}>
@@ -408,7 +499,7 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
                                                 className="tabla-img"
                                             />
                                         ) : (
-                                            <span className="sin-imagen">-</span>
+                                            <span className="sin-imagen">—</span>
                                         )}
                                     </td>
                                     <td>
@@ -429,31 +520,64 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
                                                 {item.tono}
                                             </span>
                                         ) : (
-                                            "—"
+                                            <span className="sin-imagen">—</span>
                                         )}
                                     </td>
                                     <td>{item.categoria}</td>
                                     <td>
-                                        <span className={`inv-stock inv-stock--${estado}`}>
+                                        <span
+                                            className={`inv-stock inv-stock--${
+                                                item.estado ? estado : "deshabilitado"
+                                            }`}
+                                        >
                                             {item.stock}
                                         </span>
                                     </td>
                                     <td>
-                                        <span className={`chip-estado ${estado}`}>
-                                            {ETIQUETA_ESTADO[estado]}
+                                        <span
+                                            className={`chip-estado ${
+                                                item.estado ? estado : "deshabilitado"
+                                            }`}
+                                        >
+                                            {item.estado
+                                                ? ETIQUETA_ESTADO[estado]
+                                                : "Deshabilitado"}
                                         </span>
-                                        {!item.estado && (
-                                            <span className="chip-inactivo">Deshabilitado</span>
-                                        )}
                                     </td>
-                                    <td className="acciones">
+                                    <td className="acciones inv-acciones">
                                         <button
-                                            className="accion-ver"
+                                            type="button"
                                             onClick={() => abrirAjuste(item)}
                                             title="Ajustar stock"
                                         >
                                             <FaSlidersH />
                                         </button>
+                                        {producto && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onEditar(producto)}
+                                                    title="Editar producto"
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="accion-ver"
+                                                    onClick={() => onVer(producto)}
+                                                    title="Ver producto"
+                                                >
+                                                    <FaEye />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onEliminar(producto)}
+                                                    title="Eliminar producto"
+                                                >
+                                                    <FaTrash />
+                                                </button>
+                                            </>
+                                        )}
                                     </td>
                                 </tr>
                             );
@@ -463,68 +587,79 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
 
                 {itemsFiltrados.length === 0 && (
                     <p className="sin-productos">
-                        {items.length === 0
-                            ? "Aún no hay productos en el inventario."
-                            : "No hay resultados para los filtros aplicados."}
+                        {hayFiltros
+                            ? "No se encontraron productos con esos filtros."
+                            : "Aún no hay productos. Crea el primero."}
                     </p>
                 )}
             </div>
 
             <p className="inv-total">
-                Mostrando {itemsFiltrados.length} de {items.length} referencias
-                {hayFiltros && " (filtros aplicados)"}
+                {itemsFiltrados.length} referencia(s) · {unidadesFiltradas} unidad(es)
             </p>
 
             {/* =======================
                 HISTORIAL
             ======================= */}
             <div className="inv-historial">
-                <button
-                    className="inv-historial-boton"
-                    onClick={() => setVerHistorial((v) => !v)}
-                >
-                    <FaHistory /> Historial de movimientos ({movimientos.length})
-                </button>
+                {historialDisponible ? (
+                    <>
+                        <button
+                            className="inv-historial-boton"
+                            onClick={() => setVerHistorial((v) => !v)}
+                        >
+                            <FaHistory /> Historial de movimientos ({movimientos.length})
+                        </button>
 
-                {verHistorial && (
-                    <div className="admin-table inv-tabla">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Tipo</th>
-                                    <th>Referencia</th>
-                                    <th>Cantidad</th>
-                                    <th>Stock</th>
-                                    <th>Motivo</th>
-                                    <th>Admin</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {movimientos.map((m) => (
-                                    <tr key={m.id_movimiento}>
-                                        <td>{formatearFecha(m.created_at)}</td>
-                                        <td>
-                                            <span className={`inv-mov inv-mov--${m.tipo}`}>
-                                                {ETIQUETA_TIPO[m.tipo] || m.tipo}
-                                            </span>
-                                        </td>
-                                        <td>{m.referencia || `Producto #${m.id_producto}`}</td>
-                                        <td>{m.cantidad}</td>
-                                        <td>
-                                            {m.stock_anterior} → {m.stock_nuevo}
-                                        </td>
-                                        <td>{m.motivo || "—"}</td>
-                                        <td>{m.id_administrador ? `#${m.id_administrador}` : "—"}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        {verHistorial && (
+                            <div className="admin-table inv-tabla">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Tipo</th>
+                                            <th>Referencia</th>
+                                            <th>Cantidad</th>
+                                            <th>Stock</th>
+                                            <th>Motivo</th>
+                                            <th>Admin</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {movimientos.map((m) => (
+                                            <tr key={m.id_movimiento}>
+                                                <td>{formatearFecha(m.created_at)}</td>
+                                                <td>
+                                                    <span className={`inv-mov inv-mov--${m.tipo}`}>
+                                                        {ETIQUETA_TIPO[m.tipo] || m.tipo}
+                                                    </span>
+                                                </td>
+                                                <td>{m.referencia || `Producto #${m.id_producto}`}</td>
+                                                <td>{m.cantidad}</td>
+                                                <td>
+                                                    {m.stock_anterior} → {m.stock_nuevo}
+                                                </td>
+                                                <td>{m.motivo || "—"}</td>
+                                                <td>{m.id_administrador ? `#${m.id_administrador}` : "—"}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
 
-                        {movimientos.length === 0 && (
-                            <p className="sin-productos">Todavía no hay movimientos registrados.</p>
+                                {movimientos.length === 0 && (
+                                    <p className="sin-productos">
+                                        Todavía no hay movimientos registrados.
+                                    </p>
+                                )}
+                            </div>
                         )}
-                    </div>
+                    </>
+                ) : (
+                    <p className="inv-aviso-api">
+                        El historial de movimientos y los ajustes de stock requieren la
+                        versión actualizada de la API. Mientras tanto, puedes editar el stock
+                        de cada tono desde el formulario del producto.
+                    </p>
                 )}
             </div>
 
@@ -625,4 +760,4 @@ function InventarioSection({ productos, categorias, onRecargar, onNoAutorizado }
     );
 }
 
-export default InventarioSection;
+export default ProductosInventario;

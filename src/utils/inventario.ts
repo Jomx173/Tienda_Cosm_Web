@@ -94,6 +94,73 @@ export const estadoInventario = (stock: number, umbral: number = STOCK_MINIMO): 
     return "disponible";
 };
 
+export type ResumenStock = {
+    productosActivos: number;
+    unidadesDisponibles: number;
+    itemsReposicion: number;
+    itemsAgotados: number;
+    umbral: number;
+};
+
+/**
+ * Calcula el resumen de stock directamente desde los productos cargados.
+ * Un producto con variantes aporta el stock de cada tono (no su stock total),
+ * para no contar dos veces las mismas unidades.
+ */
+export const calcularResumenStock = (
+    productos: Producto[],
+    umbral: number = STOCK_MINIMO
+): ResumenStock => {
+    let productosActivos = 0;
+    let unidadesDisponibles = 0;
+    let itemsReposicion = 0;
+    let itemsAgotados = 0;
+
+    for (const producto of productos) {
+        if (producto.estado === false) continue;
+
+        productosActivos += 1;
+
+        const variantes = producto.variantes || [];
+
+        if (variantes.length > 0) {
+            for (const variante of variantes) {
+                const stock = Number(variante.stock || 0);
+
+                unidadesDisponibles += stock;
+
+                if (stock <= 0) {
+                    itemsAgotados += 1;
+                    itemsReposicion += 1;
+                } else if (stock <= umbral) {
+                    itemsReposicion += 1;
+                }
+            }
+
+            continue;
+        }
+
+        const stock = Number(producto.stock || 0);
+
+        unidadesDisponibles += stock;
+
+        if (stock <= 0) {
+            itemsAgotados += 1;
+            itemsReposicion += 1;
+        } else if (stock <= umbral) {
+            itemsReposicion += 1;
+        }
+    }
+
+    return {
+        productosActivos,
+        unidadesDisponibles,
+        itemsReposicion,
+        itemsAgotados,
+        umbral,
+    };
+};
+
 export const ETIQUETA_ESTADO: Record<EstadoStock, string> = {
     agotado: "Agotado",
     bajo: "Stock bajo",
