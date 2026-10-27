@@ -228,7 +228,11 @@ function BannersSection({ banners, onRecargar, onNoAutorizado }: Props) {
                                 </label>
 
                                 <label className="form-full">
-                                    Imagen
+                                    <span>Imagen</span>
+                                    <span className="form-ayuda-imagen">
+                                        Formatos admitidos: <strong>JPG, JPEG, PNG, WEBP, GIF</strong> &bull; Tamaño máx: <strong>5 MB</strong><br />
+                                        Dimensiones recomendadas: <strong>1920 × 600 px</strong> (panorámica horizontal)
+                                    </span>
                                     <input type="file" accept="image/*" onChange={handleImagen} />
                                     {imagenPrevia && (
                                         <img src={imagenPrevia} alt="Vista previa" className="form-preview" />

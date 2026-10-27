@@ -746,7 +746,11 @@ function ProductosSection({
                                 </label>
 
                                 <label className="form-full">
-                                    Imagen
+                                    <span>Imagen</span>
+                                    <span className="form-ayuda-imagen">
+                                        Formatos admitidos: <strong>JPG, JPEG, PNG, WEBP, GIF, JFIF</strong> &bull; Tamaño máx: <strong>10 MB</strong><br />
+                                        Dimensiones libres: <strong>Cualquier proporción</strong> (cuadrada 1:1, vertical 3:4, horizontal o alta resolución como 3000 × 4000 px). El sistema se adapta automáticamente.
+                                    </span>
                                     <input type="file" accept="image/*" onChange={handleImagen} />
                                     {imagenPrevia && (
                                         <img src={imagenPrevia} alt="Vista previa" className="form-preview" />
@@ -871,7 +875,11 @@ function ProductosSection({
                                             </label>
 
                                             <label className="form-full">
-                                                Imágenes de este tono
+                                                <span>Imágenes de este tono</span>
+                                                <span className="form-ayuda-imagen">
+                                                    Formatos admitidos: <strong>JPG, JPEG, PNG, WEBP, GIF, JFIF</strong> &bull; Hasta 12 fotos &bull; Máx. <strong>10 MB</strong> c/u<br />
+                                                    Dimensiones libres: <strong>Cualquier proporción</strong> (cuadrada 1:1, vertical 3:4, horizontal, etc., desde estándar hasta 3000 × 4000 px).
+                                                </span>
                                                 <input
                                                     type="file"
                                                     accept="image/*"
