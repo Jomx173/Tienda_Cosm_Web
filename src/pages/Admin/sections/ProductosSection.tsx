@@ -70,7 +70,6 @@ type FormularioProducto = {
     precio: string;
     precio_anterior: string;
     stock: string;
-    codigo: string;
     subcategoria: string;
     id_categoria: string;
     estado: boolean;
@@ -86,7 +85,6 @@ const formularioVacio: FormularioProducto = {
     precio: "",
     precio_anterior: "",
     stock: "",
-    codigo: "",
     subcategoria: "",
     id_categoria: "",
     estado: true,
@@ -171,7 +169,6 @@ function ProductosSection({
                     ? String(producto.precio_anterior)
                     : "",
             stock: String(producto.stock ?? ""),
-            codigo: producto.codigo || "",
             subcategoria: producto.subcategoria || "",
             id_categoria:
                 producto.id_categoria !== null && producto.id_categoria !== undefined
@@ -562,7 +559,6 @@ function ProductosSection({
                 formData.append("precio_anterior", formulario.precio_anterior);
             }
             formData.append("stock", formulario.stock);
-            formData.append("codigo", formulario.codigo || "");
             formData.append("subcategoria", formulario.subcategoria || "");
             formData.append("id_categoria", formulario.id_categoria);
             formData.append("estado", formulario.estado ? "1" : "0");
@@ -823,17 +819,6 @@ function ProductosSection({
                                         onChange={handleChange}
                                         placeholder="0"
                                         required
-                                    />
-                                </label>
-
-                                <label>
-                                    Código
-                                    <input
-                                        type="text"
-                                        name="codigo"
-                                        value={formulario.codigo}
-                                        onChange={handleChange}
-                                        placeholder="SKU o código interno"
                                     />
                                 </label>
 
