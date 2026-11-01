@@ -30,3 +30,6 @@ dist-ssr
 # Respaldos locales
 backups/
 
+# Utilidades de prueba temporales
+public/zz_*.html
+

@@ -153,7 +153,11 @@ function ProductoDetalle() {
             .map((img: ProductoImagen) => img.imagen)
             .filter((src): src is string => Boolean(src));
 
-        if (producto?.imagen && !delProducto.includes(producto.imagen)) {
+        if (producto?.imagen) {
+            const idx = delProducto.indexOf(producto.imagen);
+            if (idx > -1) {
+                delProducto.splice(idx, 1);
+            }
             delProducto.unshift(producto.imagen);
         }
 

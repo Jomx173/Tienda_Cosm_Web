@@ -2210,3 +2210,238 @@
     font-weight:600;
 }
 
+
+/* ===== Galería de fotos del producto en el modal de administración ===== */
+.fotos-galeria-contenedor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.fotos-galeria-cabecera {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.fotos-galeria-titulo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text, #333);
+}
+
+.fotos-galeria-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.btn-agregar-fotos {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #faf7f2;
+    border: 1.5px dashed var(--primary, #701522);
+    color: var(--primary, #701522);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-agregar-fotos:hover {
+    background: var(--primary, #701522);
+    color: #fff;
+}
+
+.fotos-disponibles-texto {
+    font-size: 12px;
+    color: #8a7a63;
+}
+
+.fotos-subida-progreso {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 10px 0 4px;
+    padding: 10px 12px;
+    background: #faf7f2;
+    border: 1px solid #e5ded6;
+    border-radius: 8px;
+}
+
+.fotos-subida-barra {
+    height: 8px;
+    background: #ece5db;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.fotos-subida-barra span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary, #701522), #c69214);
+    border-radius: 999px;
+    transition: width 0.2s ease;
+}
+
+.fotos-subida-texto {
+    font-size: 12px;
+    color: #8a7a63;
+}
+
+.fotos-galeria-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.foto-galeria-card {
+    position: relative;
+    background: #fff;
+    border: 1.5px solid #e5ded6;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s ease;
+}
+
+.foto-galeria-card.es-principal {
+    border-color: #c69214;
+    box-shadow: 0 0 0 2px rgba(198, 146, 20, 0.3);
+}
+
+.foto-galeria-img-wrap {
+    position: relative;
+    width: 100%;
+    height: 100px;
+    background: #f8f6f2;
+}
+
+.foto-galeria-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.foto-badge-principal {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background: #c69214;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+}
+
+.foto-btn-eliminar {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: background 0.2s ease;
+}
+
+.foto-btn-eliminar:hover {
+    background: #b00020;
+}
+
+.foto-galeria-acciones {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    background: #faf8f5;
+    border-top: 1px solid #f0eae1;
+}
+
+.foto-reordenar-btns {
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+}
+
+.foto-reordenar-btns button {
+    flex: 1;
+    background: #fff;
+    border: 1px solid #dcd3c7;
+    color: #555;
+    border-radius: 4px;
+    padding: 3px 0;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.foto-reordenar-btns button:hover:not(:disabled) {
+    background: #f0eae1;
+    color: var(--primary, #701522);
+}
+
+.foto-reordenar-btns button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.foto-btn-hacer-principal {
+    width: 100%;
+    background: #fff;
+    border: 1px solid #c69214;
+    color: #8a650c;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.foto-btn-hacer-principal:hover {
+    background: #c69214;
+    color: #fff;
+}
+
+.foto-texto-principal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #8a650c;
+    padding: 3px 0;
+}

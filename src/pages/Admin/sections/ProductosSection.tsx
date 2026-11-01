@@ -6,6 +6,11 @@ import {
     FaEdit,
     FaTrash,
     FaTimes,
+    FaStar,
+    FaRegStar,
+    FaArrowLeft,
+    FaArrowRight,
+    FaImage,
 } from "react-icons/fa";
 
 import {
@@ -16,15 +21,23 @@ import {
     crearVariante,
     actualizarVariante,
     eliminarVariante,
-    subirImagenesProducto,
-    eliminarImagenProducto,
+    subirImagenProducto,
     type DatosVariante,
 } from "../../../services/productoService";
-import type { Categoria, Producto, ProductoVariante } from "../../../services/types";
+import type { Categoria, Producto, ProductoImagen, ProductoVariante } from "../../../services/types";
 import { rutaImagen } from "../../../services/api";
+import { comprimirImagen } from "../../../utils/comprimirImagen";
 import { toastExito, toastError } from "../../../utils/toast";
 import ProductoCard from "../../../components/ProductoCard/ProductoCard";
 import ProductosInventario from "./ProductosInventario";
+
+type FotoProducto = {
+    id?: number;
+    url: string;
+    archivo?: File;
+    esPrincipal: boolean;
+    esNueva: boolean;
+};
 
 type FormularioVariante = {
     id_variante: number | null;
@@ -35,12 +48,6 @@ type FormularioVariante = {
     stock: string;
     codigo: string;
     estado: boolean;
-    /** Ya existentes en el servidor (no se vuelven a subir) */
-    imagenesExistentes: { id_imagen: number; imagen: string }[];
-    imagenesNuevas: File[];
-    imagenesPrevia: string[];
-    /** Imagenes existentes marcadas para eliminar */
-    imagenesEliminar: number[];
 };
 
 /** Color vino de MD Beauty por defecto para nuevas variantes */
@@ -55,10 +62,6 @@ const varianteVacia = (): FormularioVariante => ({
     stock: "0",
     codigo: "",
     estado: true,
-    imagenesExistentes: [],
-    imagenesNuevas: [],
-    imagenesPrevia: [],
-    imagenesEliminar: [],
 });
 
 type FormularioProducto = {
@@ -72,7 +75,8 @@ type FormularioProducto = {
     id_categoria: string;
     estado: boolean;
     destacado: boolean;
-    imagen: File | null;
+    fotos: FotoProducto[];
+    fotosEliminar: number[];
     variantes: FormularioVariante[];
 };
 
@@ -87,7 +91,8 @@ const formularioVacio: FormularioProducto = {
     id_categoria: "",
     estado: true,
     destacado: false,
-    imagen: null,
+    fotos: [],
+    fotosEliminar: [],
     variantes: [],
 };
 
@@ -112,20 +117,51 @@ function ProductosSection({
     const [editando, setEditando] = useState<Producto | null>(null);
     const [variantesEliminar, setVariantesEliminar] = useState<number[]>([]);
     const [mostrarForm, setMostrarForm] = useState(false);
-    const [imagenPrevia, setImagenPrevia] = useState("");
     const [productoVisto, setProductoVisto] = useState<Producto | null>(null);
     const [cargando, setCargando] = useState(false);
+    const [subiendoFotos, setSubiendoFotos] = useState<{
+        completadas: number;
+        total: number;
+        avance: number;
+        nombre: string;
+    } | null>(null);
 
     const abrirNuevo = () => {
         setEditando(null);
         setFormulario(formularioVacio);
-        setImagenPrevia("");
         setMostrarForm(true);
         navegar("/admin/productos");
     };
 
     const abrirEdicion = (producto: Producto) => {
         setEditando(producto);
+
+        const fotosExistentes: FotoProducto[] = [];
+        const imagenesGenerales = (producto.imagenes ?? []).filter((i) => !i.id_variante);
+
+        if (imagenesGenerales.length > 0) {
+            imagenesGenerales.forEach((img, idx) => {
+                const esPrincipal = producto.imagen ? img.imagen === producto.imagen : idx === 0;
+                fotosExistentes.push({
+                    id: img.id_imagen,
+                    url: rutaImagen(img.imagen),
+                    esPrincipal,
+                    esNueva: false,
+                });
+            });
+        } else if (producto.imagen) {
+            fotosExistentes.push({
+                id: undefined,
+                url: rutaImagen(producto.imagen),
+                esPrincipal: true,
+                esNueva: false,
+            });
+        }
+
+        if (fotosExistentes.length > 0 && !fotosExistentes.some((f) => f.esPrincipal)) {
+            fotosExistentes[0].esPrincipal = true;
+        }
+
         setFormulario({
             nombre: producto.nombre,
             descripcion: producto.descripcion || "",
@@ -143,7 +179,8 @@ function ProductosSection({
                     : "",
             estado: Boolean(producto.estado),
             destacado: Boolean(producto.destacado),
-            imagen: null,
+            fotos: fotosExistentes,
+            fotosEliminar: [],
             variantes: (producto.variantes ?? []).map((v: ProductoVariante) => ({
                 id_variante: v.id_variante,
                 tono: v.tono,
@@ -156,25 +193,24 @@ function ProductosSection({
                 stock: String(v.stock ?? "0"),
                 codigo: v.codigo || "",
                 estado: v.estado !== false,
-                imagenesExistentes: (v.imagenes ?? []).map((img) => ({
-                    id_imagen: img.id_imagen,
-                    imagen: img.imagen,
-                })),
-                imagenesNuevas: [],
-                imagenesPrevia: (v.imagenes ?? []).map((img) => rutaImagen(img.imagen)),
-                imagenesEliminar: [],
             })),
         });
-        setImagenPrevia(producto.imagen ? rutaImagen(producto.imagen) : "");
         setMostrarForm(true);
         navegar("/admin/productos");
     };
 
     const cancelarForm = () => {
+        // No permitir cerrar el modal mientras se guarda o se suben fotos
+        if (cargando) return;
+
+        formulario.fotos.forEach((f) => {
+            if (f.esNueva && f.url.startsWith("blob:")) {
+                URL.revokeObjectURL(f.url);
+            }
+        });
         setMostrarForm(false);
         setEditando(null);
         setFormulario(formularioVacio);
-        setImagenPrevia("");
         setVariantesEliminar([]);
     };
 
@@ -224,25 +260,161 @@ function ProductosSection({
         }));
     };
 
-    const handleImagen = (e: ChangeEvent<HTMLInputElement>) => {
-        const archivo = e.target.files?.[0] ?? null;
+    // ------- Gestión de Fotos del Producto (Hasta 8 fotos) -------
 
-        if (archivo) {
+    const handleFotosSeleccionadas = async (e: ChangeEvent<HTMLInputElement>) => {
+        const archivos = Array.from(e.target.files ?? []);
+        e.target.value = "";
+        if (archivos.length === 0) return;
+
+        const maxTotal = 8;
+        const cupoDisponible = maxTotal - formulario.fotos.length;
+
+        if (cupoDisponible <= 0) {
+            toastError("Ya alcanzaste el máximo de 8 fotos para este producto.");
+            return;
+        }
+
+        const permitidas = ["jpg", "jpeg", "jpe", "jfif", "png", "gif", "webp"];
+        const maxBytesOriginal = 25 * 1024 * 1024; // 25 MB (se comprimen antes de subir)
+
+        const validos: File[] = [];
+
+        for (const archivo of archivos) {
             const ext = (archivo.name.split(".").pop() || "").toLowerCase();
-            const permitidas = ["jpg", "jpeg", "jpe", "jfif", "png", "gif", "webp"];
 
             if (!permitidas.includes(ext)) {
-                toastError("Formato de imagen no soportado. Usa JPG, PNG, GIF, WEBP o JFIF.");
-                e.target.value = "";
-                return;
+                toastError(`"${archivo.name}" tiene un formato no soportado (usa JPG, PNG, WEBP, GIF o JFIF).`);
+                continue;
             }
 
-            setFormulario((prev) => ({ ...prev, imagen: archivo }));
-            setImagenPrevia(URL.createObjectURL(archivo));
+            if (archivo.size > maxBytesOriginal) {
+                toastError(
+                    `"${archivo.name}" es demasiado grande (${(
+                        archivo.size /
+                        (1024 * 1024)
+                    ).toFixed(1)} MB). Elige una foto de hasta 25 MB.`
+                );
+                continue;
+            }
+
+            validos.push(archivo);
         }
+
+        if (validos.length === 0) return;
+
+        let aAgregar = validos;
+        if (validos.length > cupoDisponible) {
+            toastError(
+                `Solo se pueden agregar hasta ${cupoDisponible} foto(s) más (máx. 8 por producto). Se agregaron las primeras ${cupoDisponible}.`
+            );
+            aAgregar = validos.slice(0, cupoDisponible);
+        }
+
+        // Comprimir en el navegador para que cada foto quepa en su propia petición (< 4 MB)
+        Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: "info",
+            title: `Comprimiendo ${aAgregar.length} foto(s)…`,
+            showConfirmButton: false,
+        });
+
+        const problemas: string[] = [];
+        const nuevasFotos: FotoProducto[] = [];
+
+        try {
+            for (const archivo of aAgregar) {
+                const resultado = await comprimirImagen(archivo);
+
+                if (!resultado.ok) {
+                    problemas.push(`"${archivo.name}" ${resultado.motivo}`);
+                    continue;
+                }
+
+                nuevasFotos.push({
+                    url: URL.createObjectURL(resultado.archivo),
+                    archivo: resultado.archivo,
+                    esPrincipal: false,
+                    esNueva: true,
+                });
+            }
+        } finally {
+            Swal.close();
+        }
+
+        problemas.forEach((motivo) => toastError(motivo));
+
+        if (nuevasFotos.length === 0) return;
+
+        setFormulario((prev) => {
+            const yaTienePrincipal = prev.fotos.some((f) => f.esPrincipal);
+            if (!yaTienePrincipal && nuevasFotos.length > 0) {
+                nuevasFotos[0].esPrincipal = true;
+            }
+
+            return {
+                ...prev,
+                fotos: [...prev.fotos, ...nuevasFotos],
+            };
+        });
     };
 
-    // ------- Variantes dentro del formulario -------
+    const quitarFoto = (indice: number) => {
+        setFormulario((prev) => {
+            const foto = prev.fotos[indice];
+            if (!foto) return prev;
+
+            if (foto.esNueva && foto.url.startsWith("blob:")) {
+                URL.revokeObjectURL(foto.url);
+            }
+
+            const nuevasEliminar = [...prev.fotosEliminar];
+            if (!foto.esNueva && foto.id) {
+                nuevasEliminar.push(foto.id);
+            }
+
+            let restantes = prev.fotos.filter((_, idx) => idx !== indice);
+
+            if (foto.esPrincipal && restantes.length > 0) {
+                restantes = restantes.map((f, idx) => ({
+                    ...f,
+                    esPrincipal: idx === 0,
+                }));
+            }
+
+            return {
+                ...prev,
+                fotos: restantes,
+                fotosEliminar: nuevasEliminar,
+            };
+        });
+    };
+
+    const hacerFotoPrincipal = (indice: number) => {
+        setFormulario((prev) => ({
+            ...prev,
+            fotos: prev.fotos.map((f, idx) => ({
+                ...f,
+                esPrincipal: idx === indice,
+            })),
+        }));
+    };
+
+    const moverFoto = (origen: number, destino: number) => {
+        setFormulario((prev) => {
+            if (destino < 0 || destino >= prev.fotos.length) return prev;
+            const copia = [...prev.fotos];
+            const [item] = copia.splice(origen, 1);
+            copia.splice(destino, 0, item);
+            return {
+                ...prev,
+                fotos: copia,
+            };
+        });
+    };
+
+    // ------- Variantes dentro del formulario (Sin imágenes por tono) -------
 
     const agregarVarianteForm = () => {
         setFormulario((prev) => ({
@@ -267,7 +439,6 @@ function ProductosSection({
     const eliminarVarianteForm = (indice: number) => {
         const variante = formulario.variantes[indice];
 
-        // Variante ya guardada en el servidor: se elimina al confirmar
         if (variante?.id_variante) {
             setVariantesEliminar((prev) =>
                 prev.includes(variante.id_variante as number)
@@ -282,96 +453,68 @@ function ProductosSection({
         }));
     };
 
-    const handleImagenesVariante = (indice: number, e: ChangeEvent<HTMLInputElement>) => {
-        const archivos = Array.from(e.target.files ?? []);
-        if (archivos.length === 0) return;
+    /**
+     * Sube las fotos nuevas una por una (cada petición debe pesar < 4.5 MB por el
+     * límite de Vercel). Un fallo en una foto no cancela las demás: se reintenta
+     * una vez y, si aún falla, se anota para avisar al final.
+     */
+    const subirFotosNuevas = async (idProducto: number, fotosNuevas: FotoProducto[]) => {
+        const total = fotosNuevas.length;
+        const fallidas: string[] = [];
+        let idPrincipalNueva: number | null = null;
 
-        const permitidas = ["jpg", "jpeg", "jpe", "jfif", "png", "gif", "webp"];
-        const validas = archivos.filter((a) => {
-            const ext = (a.name.split(".").pop() || "").toLowerCase();
-            return permitidas.includes(ext);
-        });
+        setSubiendoFotos({ completadas: 0, total, avance: 0, nombre: fotosNuevas[0]?.archivo?.name ?? "" });
 
-        if (validas.length !== archivos.length) {
-            toastError("Algunas imágenes no tienen un formato soportado y se omitieron.");
-        }
+        for (let i = 0; i < total; i++) {
+            const foto = fotosNuevas[i];
+            const nombre = foto.archivo?.name || `Foto ${i + 1}`;
 
-        setFormulario((prev) => ({
-            ...prev,
-            variantes: prev.variantes.map((v, i) =>
-                i === indice
-                    ? {
-                        ...v,
-                        imagenesNuevas: [...v.imagenesNuevas, ...validas],
-                        imagenesPrevia: [
-                            ...v.imagenesPrevia,
-                            ...validas.map((a) => URL.createObjectURL(a)),
-                        ],
-                    }
-                    : v
-            ),
-        }));
+            const subirUna = () =>
+                subirImagenProducto(idProducto, foto.archivo!, (avance) => {
+                    setSubiendoFotos({ completadas: i, total, avance, nombre });
+                });
 
-        e.target.value = "";
-    };
+            try {
+                let creadas: ProductoImagen[] | null = null;
 
-    const quitarImagenVariante = (indice: number, posicion: number) => {
-        setFormulario((prev) => ({
-            ...prev,
-            variantes: prev.variantes.map((v, i) => {
-                if (i !== indice) return v;
-
-                const existentes = v.imagenesExistentes.length;
-
-                // Si la posicion cae dentro de las existentes, se marca para borrar
-                if (posicion < existentes) {
-                    const idImagen = v.imagenesExistentes[posicion].id_imagen;
-                    return {
-                        ...v,
-                        imagenesExistentes: v.imagenesExistentes.filter((_, p) => p !== posicion),
-                        imagenesEliminar: [...v.imagenesEliminar, idImagen],
-                        imagenesPrevia: v.imagenesPrevia.filter((_, p) => p !== posicion),
-                    };
+                try {
+                    creadas = await subirUna();
+                } catch {
+                    // Un reintento por si fue un fallo pasajero de red
+                    creadas = await subirUna();
                 }
 
-                const posNueva = posicion - existentes;
+                const creada = creadas?.[0];
+                if (foto.esPrincipal && creada?.id_imagen) {
+                    idPrincipalNueva = creada.id_imagen;
+                }
+            } catch (err) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const eAny = err as any;
+                const status = eAny?.response?.status;
 
-                return {
-                    ...v,
-                    imagenesNuevas: v.imagenesNuevas.filter((_, p) => p !== posNueva),
-                    imagenesPrevia: v.imagenesPrevia.filter((_, p) => p !== posicion),
-                };
-            }),
-        }));
-    };
+                if (status === 401 || status === 403) {
+                    setSubiendoFotos(null);
+                    onNoAutorizado(err);
+                    throw err;
+                }
 
-    // Sube las imagenes nuevas de una variante ya existente en el servidor
-    const sincronizarImagenesVariante = async (
-        idProducto: number,
-        v: FormularioVariante
-    ) => {
-        for (const idImagen of v.imagenesEliminar) {
-            try {
-                await eliminarImagenProducto(idImagen);
-            } catch {
-                // Si ya no existe, se ignora
+                fallidas.push(nombre);
             }
+
+            setSubiendoFotos({ completadas: i + 1, total, avance: 1, nombre });
         }
 
-        if (v.imagenesNuevas.length > 0) {
-            await subirImagenesProducto(idProducto, v.imagenesNuevas, v.id_variante);
-        }
+        setSubiendoFotos(null);
+        return { fallidas, idPrincipalNueva };
     };
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setCargando(true);
 
-        // Bandera para saber si el producto base ya fue guardado
-        let productoBaseGuardado = false;
-
         try {
-            // Comprobación de duplicados: solo para endpoints opcionales ausentes (404)
+            // Comprobación de duplicados
             try {
                 const duplicado = await buscarProductoDuplicado({
                     nombre: formulario.nombre,
@@ -386,13 +529,14 @@ function ProductosSection({
                         title: "Posible producto duplicado",
                         html: `⚠️ Ya existe un producto similar: <strong>'${duplicado.nombre}'</strong> (${duplicado.categoria?.nombre || duplicado.categoria || ""}${duplicado.subcategoria ? ` / ${duplicado.subcategoria}` : ""}).<br><br>¿Quieres continuar de todas formas?`,
                         showCancelButton: true,
-                        confirmButtonText: "Sí, crear de todas formas",
+                        confirmButtonText: "Sí, guardar de todas formas",
                         cancelButtonText: "Cancelar y revisar",
                         confirmButtonColor: "#7B1023",
                         cancelButtonColor: "#8A7A63",
                     });
 
                     if (!continuar.isConfirmed) {
+                        setCargando(false);
                         return;
                     }
                 }
@@ -400,17 +544,12 @@ function ProductosSection({
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const d = dupErr as any;
                 const statusDup = d?.response?.status;
-                // Solo degradar si el endpoint no existe (404). NO ignorar 401/403/500/errores de validación
                 if (statusDup === 404) {
-                    toastError("No fue posible comprobar duplicados (función no disponible con la API actual).");
+                    // Endpoint ausente: ignorar
                 } else if (statusDup === 401 || statusDup === 403) {
                     onNoAutorizado(dupErr);
                     throw dupErr;
                 } else if (statusDup >= 400) {
-                    // Errores reales/validación: no continuar silenciosamente
-                    throw dupErr;
-                } else {
-                    // Error de red sin respuesta
                     throw dupErr;
                 }
             }
@@ -429,8 +568,34 @@ function ProductosSection({
             formData.append("estado", formulario.estado ? "1" : "0");
             formData.append("destacado", formulario.destacado ? "1" : "0");
 
-            if (formulario.imagen) {
-                formData.append("imagen", formulario.imagen);
+            // Las fotos NO se adjuntan al guardar el producto: se suben una por una
+            // después (cada petición debe pesar menos de 4.5 MB por el límite de Vercel).
+            const fotosNuevas = formulario.fotos.filter((f) => f.esNueva && f.archivo);
+            const fotoPrincipal = formulario.fotos.find((f) => f.esPrincipal);
+            const esEdicion = Boolean(editando);
+
+            // Definir foto principal solo si ya existe en la galería; si es una foto
+            // nueva se asigna después, cuando tenga su id.
+            if (fotoPrincipal && !fotoPrincipal.esNueva) {
+                if (fotoPrincipal.id) {
+                    formData.append("id_imagen_principal", String(fotoPrincipal.id));
+                } else if (fotoPrincipal.url) {
+                    formData.append("imagen_principal", fotoPrincipal.url);
+                }
+            }
+
+            // Fotos existentes marcadas para eliminar
+            if (formulario.fotosEliminar.length > 0) {
+                formData.append("imagenes_eliminar", JSON.stringify(formulario.fotosEliminar));
+            }
+
+            // Orden final de las fotos existentes
+            const ordenExistentes = formulario.fotos
+                .map((f, orden) => ({ id_imagen: f.id, orden }))
+                .filter((item): item is { id_imagen: number; orden: number } => Boolean(item.id_imagen));
+
+            if (ordenExistentes.length > 0) {
+                formData.append("imagenes_orden", JSON.stringify(ordenExistentes));
             }
 
             let idProducto: number;
@@ -438,16 +603,12 @@ function ProductosSection({
             if (editando) {
                 await actualizarProducto(editando.id_producto, formData);
                 idProducto = editando.id_producto;
-                productoBaseGuardado = true;
-                toastExito("Producto actualizado");
             } else {
                 const creado = await crearProducto(formData);
                 idProducto = creado.id_producto;
-                productoBaseGuardado = true;
-                toastExito("Producto creado");
             }
 
-            // Sincronizar variantes: crear las nuevas, actualizar las existentes (SOLO si hay variantes o si hay que eliminar)
+            // Sincronizar variantes (tonos sin campo de imagen)
             const datosVariante = (v: FormularioVariante): DatosVariante => ({
                 tono: v.tono.trim(),
                 color: v.color || null,
@@ -458,185 +619,141 @@ function ProductosSection({
                 estado: v.estado,
             });
 
-            let variantesFallidas = false;
             const hayVariantes = formulario.variantes.some((v) => v.tono.trim());
             const hayVariantesEliminar = variantesEliminar.length > 0;
 
             if (hayVariantes || hayVariantesEliminar) {
-                try {
-                    for (const v of formulario.variantes) {
-                        if (!v.tono.trim()) continue;
+                for (const v of formulario.variantes) {
+                    if (!v.tono.trim()) continue;
 
-                        try {
-                            if (v.id_variante) {
-                                await actualizarVariante(v.id_variante, datosVariante(v));
-                            } else {
-                                const creada = await crearVariante(idProducto, datosVariante(v));
-                                v.id_variante = creada.id_variante;
-                            }
+                    if (v.id_variante) {
+                        await actualizarVariante(v.id_variante, datosVariante(v));
+                    } else {
+                        const creada = await crearVariante(idProducto, datosVariante(v));
+                        v.id_variante = creada.id_variante;
+                    }
+                }
 
-                            // Sincronizar imágenes por variante
-                            try {
-                                await sincronizarImagenesVariante(idProducto, v);
-                            } catch (imgErr) {
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                const ie = imgErr as any;
-                                const st = ie?.response?.status;
-                                if (st === 404) {
-                                    variantesFallidas = true;
-                                    // No afirmamos que se guardaron
-                                } else {
-                                    variantesFallidas = true;
-                                    throw imgErr;
-                                }
-                            }
-                        } catch (varErr) {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            const ve = varErr as any;
-                            const sv = ve?.response?.status;
-                            if (sv === 404) {
-                                variantesFallidas = true;
-                                // Endpoints de variantes no disponibles con API antigua - NO reintentar
-                                continue;
-                            } else if (sv === 401 || sv === 403) {
-                                onNoAutorizado(varErr);
-                                throw varErr;
-                            } else {
-                                variantesFallidas = true;
-                                throw varErr;
-                            }
-                        }
+                for (const idVariante of variantesEliminar) {
+                    try {
+                        await eliminarVariante(idVariante);
+                    } catch {
+                        // Ignorar si ya fue eliminada
                     }
-
-                    // Eliminar las variantes que el administrador quitó del formulario
-                    for (const idVariante of variantesEliminar) {
-                        try {
-                            await eliminarVariante(idVariante);
-                        } catch (delVarErr) {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            const dve = delVarErr as any;
-                            const sdv = dve?.response?.status;
-                            if (sdv === 404) {
-                                variantesFallidas = true;
-                                continue;
-                            } else if (sdv === 401 || sdv === 403) {
-                                onNoAutorizado(delVarErr);
-                                throw delVarErr;
-                            }
-                            // Si ya no existe, se ignora; otros errores reales se marcan
-                            variantesFallidas = true;
-                        }
-                    }
-                } catch (syncErr) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const se = syncErr as any;
-                    const sse = se?.response?.status;
-                    if (sse === 401 || sse === 403) {
-                        onNoAutorizado(syncErr);
-                        // El producto base ya fue guardado, informar claramente
-                        toastError("El producto base se guardó correctamente, pero no fue posible completar la sincronización por un problema de autorización. Las variantes/imágenes no se sincronizaron.");
-                        cancelarForm();
-                        await onRecargar();
-                        return;
-                    }
-                    // Error real no-404
-                    variantesFallidas = true;
-                    throw syncErr;
                 }
             }
 
-            if (variantesFallidas && (hayVariantes || hayVariantesEliminar)) {
-                toastError("El producto base se guardó correctamente, pero las variantes/imágenes todavía no pudieron sincronizarse con la API actual.");
+            // Subir las fotos nuevas una por una, con progreso y reintento por foto
+            let fotosFallidas: string[] = [];
+            let idPrincipalNueva: number | null = null;
+
+            if (fotosNuevas.length > 0) {
+                const subida = await subirFotosNuevas(idProducto, fotosNuevas);
+                fotosFallidas = subida.fallidas;
+                idPrincipalNueva = subida.idPrincipalNueva;
             }
 
-            cancelarForm();
-            await onRecargar();
-        } catch (err) {
-            // Si el producto base YA fue guardado, NO mostrar error genérico de fallo total
-            if (productoBaseGuardado) {
-                onNoAutorizado(err);
-                toastError("El producto base se guardó correctamente, pero ocurrió un error durante la sincronización posterior de variantes/imágenes. Las variantes no se garantizan guardadas.");
+            // Si la portada marcada es una foto recién subida, asignarla por su id
+            if (idPrincipalNueva) {
                 try {
-                    cancelarForm();
-                    await onRecargar();
+                    const datosPrincipal = new FormData();
+                    datosPrincipal.append("id_imagen_principal", String(idPrincipalNueva));
+                    await actualizarProducto(idProducto, datosPrincipal);
                 } catch {
-                    // Ignorar errores secundarios
+                    // No fatal: la portada queda como la determine la API (primera foto)
                 }
+            }
+
+            setMostrarForm(false);
+            setEditando(null);
+            setFormulario(formularioVacio);
+            setVariantesEliminar([]);
+            await onRecargar();
+
+            if (fotosFallidas.length > 0) {
+                await Swal.fire({
+                    icon: "warning",
+                    title: esEdicion ? "Producto actualizado con avisos" : "Producto creado con avisos",
+                    html:
+                        `El producto se guardó correctamente, pero ` +
+                        (fotosFallidas.length === 1
+                            ? "esta foto no se pudo subir:"
+                            : `estas ${fotosFallidas.length} fotos no se pudieron subir:`) +
+                        `<br><strong>${fotosFallidas.join("<br>")}</strong><br><br>` +
+                        "Puedes agregarlas de nuevo desde la edición del producto.",
+                    confirmButtonText: "Entendido",
+                    confirmButtonColor: "#7B1023",
+                });
+            } else {
+                toastExito(esEdicion ? "Producto actualizado" : "Producto creado");
+            }
+        } catch (err) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const eAny = err as any;
+            if (eAny?.response?.status === 401 || eAny?.response?.status === 403) {
+                onNoAutorizado(err);
                 return;
             }
-
-            onNoAutorizado(err);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const axiosError = err as any;
-            toastError(axiosError?.response?.data?.mensaje || "No se pudo guardar el producto. Intenta de nuevo.");
+            toastError(eAny?.response?.data?.mensaje || "Error al procesar el producto.");
         } finally {
+            setSubiendoFotos(null);
             setCargando(false);
         }
     };
 
     const handleEliminar = async (producto: Producto) => {
-        const confirmacion = await Swal.fire({
-            title: "¿Eliminar producto?",
-            text: `¿Seguro que quieres eliminar "${producto.nombre}"? Esta acción no se puede deshacer.`,
+        const confirmar = await Swal.fire({
             icon: "warning",
+            title: `¿Eliminar "${producto.nombre}"?`,
+            text: "Esta acción no se puede deshacer. Se eliminarán sus variantes y fotos asociadas.",
             showCancelButton: true,
-            confirmButtonText: "Eliminar",
+            confirmButtonText: "Sí, eliminar",
             cancelButtonText: "Cancelar",
-            confirmButtonColor: "#d33",
+            confirmButtonColor: "#7B1023",
+            cancelButtonColor: "#8A7A63",
         });
 
-        if (!confirmacion.isConfirmed) return;
+        if (!confirmar.isConfirmed) return;
 
         try {
             await eliminarProducto(producto.id_producto);
             toastExito("Producto eliminado");
             await onRecargar();
         } catch (err) {
-            onNoAutorizado(err);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const axiosError = err as any;
-            toastError(axiosError?.response?.data?.mensaje || "No se pudo eliminar el producto");
+            const eAny = err as any;
+            if (eAny?.response?.status === 401 || eAny?.response?.status === 403) {
+                onNoAutorizado(err);
+                return;
+            }
+            toastError(eAny?.response?.data?.mensaje || "No se pudo eliminar el producto.");
         }
     };
 
     const productosOferta = productos.filter(
-        (p) => p.precio_anterior && Number(p.precio_anterior) > Number(p.precio)
+        (p) =>
+            p.precio_anterior !== null &&
+            p.precio_anterior !== undefined &&
+            Number(p.precio_anterior) > Number(p.precio)
     );
 
     return (
         <>
-            {pestana === "ofertas" && (
-                <>
-                    <div className="admin-toolbar">
-                        <button className="btn-nuevo" onClick={abrirNuevo}>
-                            <FaPlus /> Nueva oferta
-                        </button>
-                    </div>
-
-                    <p className="banner-ayuda">
-                        Productos con precio anterior (descuento activo). Edítalos para
-                        ajustar la oferta o quitar el precio anterior.
-                    </p>
-                </>
-            )}
-
             {mostrarForm && (
                 <div className="modal-overlay" onClick={cancelarForm}>
-                    <div
-                        className="modal-contenido"
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                    <div className="modal-contenido" onClick={(e) => e.stopPropagation()}>
                         <form className="admin-form" onSubmit={handleSubmit}>
                             <h4>{editando ? "Editar producto" : "Nuevo producto"}</h4>
 
                             <div className="form-grid">
-                                <label>
+                                <label className="form-full">
                                     Nombre *
                                     <input
+                                        type="text"
                                         name="nombre"
                                         value={formulario.nombre}
                                         onChange={handleChange}
-                                        placeholder="Ej: Labial Mate"
+                                        placeholder="Nombre del producto"
                                         required
                                     />
                                 </label>
@@ -659,10 +776,21 @@ function ProductosSection({
                                 </label>
 
                                 <label>
+                                    Subcategoría
+                                    <input
+                                        type="text"
+                                        name="subcategoria"
+                                        value={formulario.subcategoria}
+                                        onChange={handleChange}
+                                        placeholder="Ej: Labiales, Sombras..."
+                                    />
+                                </label>
+
+                                <label>
                                     Precio (L) *
                                     <input
-                                        name="precio"
                                         type="number"
+                                        name="precio"
                                         step="0.01"
                                         min="0"
                                         value={formulario.precio}
@@ -672,26 +800,24 @@ function ProductosSection({
                                     />
                                 </label>
 
-                                {editando && (
-                                    <label>
-                                        Precio anterior (L)
-                                        <input
-                                            name="precio_anterior"
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            value={formulario.precio_anterior}
-                                            onChange={handleChange}
-                                            placeholder="Opcional, se muestra tachado"
-                                        />
-                                    </label>
-                                )}
+                                <label>
+                                    Precio anterior (L)
+                                    <input
+                                        type="number"
+                                        name="precio_anterior"
+                                        step="0.01"
+                                        min="0"
+                                        value={formulario.precio_anterior}
+                                        onChange={handleChange}
+                                        placeholder="Opcional (para ofertas)"
+                                    />
+                                </label>
 
                                 <label>
                                     Stock *
                                     <input
-                                        name="stock"
                                         type="number"
+                                        name="stock"
                                         min="0"
                                         value={formulario.stock}
                                         onChange={handleChange}
@@ -701,28 +827,27 @@ function ProductosSection({
                                 </label>
 
                                 <label>
-                                    Subcategoría
+                                    Código
                                     <input
-                                        name="subcategoria"
-                                        value={formulario.subcategoria}
+                                        type="text"
+                                        name="codigo"
+                                        value={formulario.codigo}
                                         onChange={handleChange}
-                                        placeholder="Ej: Labiales, Bases, Perfumes"
+                                        placeholder="SKU o código interno"
                                     />
                                 </label>
 
-                                {editando && (
-                                    <label>
-                                        Estado
-                                        <select
-                                            name="estado"
-                                            value={formulario.estado ? "1" : "0"}
-                                            onChange={handleChange}
-                                        >
-                                            <option value="1">Activo</option>
-                                            <option value="0">Deshabilitado</option>
-                                        </select>
-                                    </label>
-                                )}
+                                <label>
+                                    Estado
+                                    <select
+                                        name="estado"
+                                        value={formulario.estado ? "1" : "0"}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="1">Activo</option>
+                                        <option value="0">Deshabilitado</option>
+                                    </select>
+                                </label>
 
                                 <label className="form-checkbox">
                                     <input
@@ -731,7 +856,7 @@ function ProductosSection({
                                         checked={formulario.destacado}
                                         onChange={handleChange}
                                     />
-                                    <span>Marcar como nuevo (etiqueta "Nuevo")</span>
+                                    <span>Producto destacado</span>
                                 </label>
 
                                 <label className="form-full">
@@ -745,19 +870,103 @@ function ProductosSection({
                                     />
                                 </label>
 
-                                <label className="form-full">
-                                    <span>Imagen</span>
-                                    <span className="form-ayuda-imagen">
-                                        Formatos admitidos: <strong>JPG, JPEG, PNG, WEBP, GIF, JFIF</strong> &bull; Tamaño máx: <strong>10 MB</strong><br />
-                                        Dimensiones libres: <strong>Cualquier proporción</strong> (cuadrada 1:1, vertical 3:4, horizontal o alta resolución como 3000 × 4000 px). El sistema se adapta automáticamente.
-                                    </span>
-                                    <input type="file" accept="image/*" onChange={handleImagen} />
-                                    {imagenPrevia && (
-                                        <img src={imagenPrevia} alt="Vista previa" className="form-preview" />
+                                {/* Galería de fotos del producto */}
+                                <div className="form-full fotos-galeria-contenedor">
+                                    <div className="fotos-galeria-cabecera">
+                                        <label className="fotos-galeria-titulo">
+                                            <FaImage /> Fotos del producto ({formulario.fotos.length}/8)
+                                        </label>
+                                        <span className="form-ayuda-imagen">
+                                            Formatos admitidos: <strong>JPG, JPEG, PNG, WEBP, GIF, JFIF</strong> &bull; Hasta <strong>8 fotos</strong>.<br />
+                                            Las fotos se <strong>reducen y comprimen automáticamente</strong> antes de subirse (máx. ~4 MB por foto). La foto con el distintivo <strong style={{ color: "#c69214" }}>★ Principal</strong> es la portada del producto.
+                                        </span>
+                                    </div>
+
+                                    {formulario.fotos.length < 8 && (
+                                        <div className="fotos-galeria-input-wrap">
+                                            <label className="btn-agregar-fotos">
+                                                <FaPlus /> {formulario.fotos.length === 0 ? "Seleccionar fotos" : "Agregar más fotos"}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    multiple
+                                                    onChange={handleFotosSeleccionadas}
+                                                    style={{ display: "none" }}
+                                                />
+                                            </label>
+                                            <span className="fotos-disponibles-texto">
+                                                Puedes agregar hasta {8 - formulario.fotos.length} foto(s) más.
+                                            </span>
+                                        </div>
                                     )}
-                                </label>
+
+                                    {formulario.fotos.length > 0 && (
+                                        <div className="fotos-galeria-grid">
+                                            {formulario.fotos.map((foto, index) => (
+                                                <div
+                                                    key={`${foto.url}-${index}`}
+                                                    className={`foto-galeria-card ${foto.esPrincipal ? "es-principal" : ""}`}
+                                                >
+                                                    <div className="foto-galeria-img-wrap">
+                                                        <img src={foto.url} alt={`Foto ${index + 1}`} />
+                                                        {foto.esPrincipal && (
+                                                            <span className="foto-badge-principal" title="Foto principal de portada">
+                                                                ★ Principal
+                                                            </span>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            className="foto-btn-eliminar"
+                                                            onClick={() => quitarFoto(index)}
+                                                            title="Quitar esta foto"
+                                                        >
+                                                            <FaTimes />
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="foto-galeria-acciones">
+                                                        <div className="foto-reordenar-btns">
+                                                            <button
+                                                                type="button"
+                                                                disabled={index === 0}
+                                                                onClick={() => moverFoto(index, index - 1)}
+                                                                title="Mover hacia la izquierda"
+                                                            >
+                                                                <FaArrowLeft />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={index === formulario.fotos.length - 1}
+                                                                onClick={() => moverFoto(index, index + 1)}
+                                                                title="Mover hacia la derecha"
+                                                            >
+                                                                <FaArrowRight />
+                                                            </button>
+                                                        </div>
+
+                                                        {!foto.esPrincipal ? (
+                                                            <button
+                                                                type="button"
+                                                                className="foto-btn-hacer-principal"
+                                                                onClick={() => hacerFotoPrincipal(index)}
+                                                                title="Marcar como foto principal"
+                                                            >
+                                                                <FaRegStar /> Hacer principal
+                                                            </button>
+                                                        ) : (
+                                                            <span className="foto-texto-principal">
+                                                                <FaStar /> Principal
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
+                            {/* Sección Variantes (Tonos sin campo de imagen) */}
                             <div className="variantes-seccion">
                                 <div className="variantes-cab">
                                     <h5>Variantes del producto</h5>
@@ -771,8 +980,7 @@ function ProductosSection({
                                 </div>
 
                                 <p className="variantes-ayuda">
-                                    Añade cada tono o variante con su precio, stock, código e
-                                    imágenes. El producto se registra una sola vez.
+                                    Añade cada tono o variante con su precio, stock y código. El producto se registra una sola vez.
                                 </p>
 
                                 {formulario.variantes.length === 0 && (
@@ -874,46 +1082,58 @@ function ProductosSection({
                                                 />
                                             </label>
 
-                                            <label className="form-full">
-                                                <span>Imágenes de este tono</span>
-                                                <span className="form-ayuda-imagen">
-                                                    Formatos admitidos: <strong>JPG, JPEG, PNG, WEBP, GIF, JFIF</strong> &bull; Hasta 12 fotos &bull; Máx. <strong>10 MB</strong> c/u<br />
-                                                    Dimensiones libres: <strong>Cualquier proporción</strong> (cuadrada 1:1, vertical 3:4, horizontal, etc., desde estándar hasta 3000 × 4000 px).
-                                                </span>
+                                            <label>
+                                                Código
                                                 <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    multiple
-                                                    onChange={(e) => handleImagenesVariante(i, e)}
+                                                    type="text"
+                                                    value={v.codigo}
+                                                    onChange={(e) =>
+                                                        cambiarVarianteForm(i, "codigo", e.target.value)
+                                                    }
+                                                    placeholder="Opcional"
                                                 />
                                             </label>
                                         </div>
-
-                                        {v.imagenesPrevia.length > 0 && (
-                                            <div className="variante-previa">
-                                                {v.imagenesPrevia.map((src, p) => (
-                                                    <div className="variante-previa-item" key={`${src}-${p}`}>
-                                                        <img src={src} alt="" />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => quitarImagenVariante(i, p)}
-                                                            title="Quitar imagen"
-                                                        >
-                                                            <FaTimes />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
                                     </div>
                                 ))}
                             </div>
 
+                            {subiendoFotos && (
+                                <div className="fotos-subida-progreso" role="status" aria-live="polite">
+                                    <div className="fotos-subida-barra">
+                                        <span
+                                            style={{
+                                                width: `${Math.min(
+                                                    100,
+                                                    Math.round(
+                                                        ((subiendoFotos.completadas + subiendoFotos.avance) /
+                                                            subiendoFotos.total) *
+                                                            100
+                                                    )
+                                                )}%`,
+                                            }}
+                                        />
+                                    </div>
+                                    <span className="fotos-subida-texto">
+                                        Subiendo foto {Math.min(subiendoFotos.completadas + 1, subiendoFotos.total)} de{" "}
+                                        {subiendoFotos.total}
+                                        {subiendoFotos.avance < 1
+                                            ? ` — ${Math.round(subiendoFotos.avance * 100)}%`
+                                            : ""}
+                                        {subiendoFotos.nombre ? ` · ${subiendoFotos.nombre}` : ""}
+                                    </span>
+                                </div>
+                            )}
+
                             <div className="form-actions">
                                 <button type="submit" className="btn-guardar" disabled={cargando}>
-                                    {cargando ? "Guardando..." : "Guardar"}
+                                    {cargando
+                                        ? subiendoFotos
+                                            ? "Subiendo fotos..."
+                                            : "Guardando..."
+                                        : "Guardar"}
                                 </button>
-                                <button type="button" className="btn-cancelar" onClick={cancelarForm}>
+                                <button type="button" className="btn-cancelar" onClick={cancelarForm} disabled={cargando}>
                                     Cancelar
                                 </button>
                             </div>
@@ -994,7 +1214,7 @@ function ProductosSection({
                                 className="btn-cancelar"
                                 onClick={cerrarVistaProducto}
                             >
-                                Cerrar
+                                <FaTimes /> Cerrar
                             </button>
                         </div>
                     </div>

@@ -122,6 +122,33 @@ export const subirImagenesProducto = async (
     return res.data.data;
 };
 
+/**
+ * Sube UNA foto por petición (la API corre como función de Vercel, que rechaza
+ * cuerpos de más de ~4.5 MB). `onAvance` reporta el avance de la subida actual
+ * (0 a 1) para la barra de progreso.
+ */
+export const subirImagenProducto = async (
+    idProducto: number,
+    archivo: File,
+    onAvance?: (avance: number) => void
+): Promise<ProductoImagen[]> => {
+    const formData = new FormData();
+    formData.append("imagenes", archivo);
+
+    const res = await api.post<RespuestaApi<ProductoImagen[]>>(
+        `/productos/${idProducto}/imagenes`,
+        formData,
+        {
+            onUploadProgress: (e) => {
+                if (!onAvance) return;
+                const total = e.total ?? archivo.size;
+                onAvance(total > 0 ? Math.min(e.loaded / total, 1) : 0);
+            },
+        }
+    );
+    return res.data.data;
+};
+
 export const eliminarImagenProducto = async (idImagen: number): Promise<RespuestaApi> => {
     const res = await api.delete<RespuestaApi>(`/productos/imagenes/${idImagen}`);
     return res.data;
