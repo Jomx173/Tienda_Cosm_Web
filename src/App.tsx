@@ -10,6 +10,7 @@ import Categoria from "./pages/Categoria/Categoria";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import ScrollToTop from "./components/ScrollToTop/ScrollToTop";
 import PwaInstall from "./components/PwaInstall/PwaInstall";
+import PushNotifications from "./components/PushNotifications/PushNotifications";
 
 function App() {
     return (
@@ -101,6 +102,7 @@ function App() {
                 />
             </Routes>
             <PwaInstall />
+            <PushNotifications />
         </BrowserRouter>
     );
 }
