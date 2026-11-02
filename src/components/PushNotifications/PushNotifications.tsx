@@ -13,8 +13,8 @@ type EstadoPush =
  * Botón para activar/desactivar las notificaciones push de pedidos nuevos
  * en el panel admin de MD.
  *
- * Solo se muestra dentro del admin (/admin o /login). La tienda pública no
- * lo ve.
+ * Solo se muestra cuando hay una sesión de administrador válida y la ruta
+ * empieza con /admin. No aparece en /login ni en la tienda pública.
  *
  * Flujo de activación (desencadenado por clic del usuario):
  *   1. Pide permiso de notificaciones (Notification.requestPermission).
@@ -26,16 +26,22 @@ type EstadoPush =
  * Flujo de desactivación:
  *   pushManager.getSubscription().unsubscribe() y DELETE /api/push/suscribir.
  *
+ * Si el servidor responde 401/403 (sesión vencida), se muestra un mensaje en
+ * español y se hace unsubscribe para no dejar una suscripción a medias.
+ *
  * Al abrir el admin comprueba si ya hay una suscripción (getSubscription) y,
  * si la hay, muestra el estado "activadas" sin duplicar nada.
  */
 export default function PushNotifications() {
     const [estado, setEstado] = useState<EstadoPush>("cargando");
     const [cargando, setCargando] = useState(false);
+    const [mensajeSesion, setMensajeSesion] = useState<string | null>(null);
 
     const pathname = window.location.pathname;
     const esAdmin = pathname.startsWith("/admin");
-    const esLogin = pathname === "/login";
+
+    const token = localStorage.getItem("token");
+    const haySesion = !!token;
 
     const esCompatible =
         typeof window !== "undefined" &&
@@ -48,13 +54,15 @@ export default function PushNotifications() {
     // Comprueba el estado inicial al montar: ¿ya hay suscripción?
     // ------------------------------------------------------------------------
     useEffect(() => {
-        if (!esAdmin && !esLogin) {
+        if (!esAdmin || !haySesion) {
             setEstado("desactivadas");
+            setMensajeSesion(null);
             return;
         }
 
         if (!esCompatible) {
             setEstado("no_compatibles");
+            setMensajeSesion(null);
             return;
         }
 
@@ -68,6 +76,7 @@ export default function PushNotifications() {
                 if (!registro) {
                     if (montado) {
                         setEstado("desactivadas");
+                        setMensajeSesion(null);
                     }
                     return;
                 }
@@ -76,10 +85,13 @@ export default function PushNotifications() {
                 if (montado) {
                     if (suscripcion) {
                         setEstado("activadas");
+                        setMensajeSesion(null);
                     } else if (Notification.permission === "denied") {
                         setEstado("bloqueadas");
+                        setMensajeSesion(null);
                     } else {
                         setEstado("desactivadas");
+                        setMensajeSesion(null);
                     }
                 }
             } catch {
@@ -89,6 +101,7 @@ export default function PushNotifications() {
                             ? "bloqueadas"
                             : "desactivadas"
                     );
+                    setMensajeSesion(null);
                 }
             }
         })();
@@ -97,13 +110,14 @@ export default function PushNotifications() {
             montado = false;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [esAdmin, esLogin, esCompatible]);
+    }, [esAdmin, haySesion, esCompatible]);
 
     // ------------------------------------------------------------------------
     // Activa las notificaciones (solo por clic del usuario).
     // ------------------------------------------------------------------------
     const activar = useCallback(async () => {
         setCargando(true);
+        setMensajeSesion(null);
         try {
             // 1. Pide permiso de notificaciones.
             const permiso = await Notification.requestPermission();
@@ -156,9 +170,29 @@ export default function PushNotifications() {
             });
 
             setEstado("activadas");
-        } catch (error) {
-            console.error("Error activando notificaciones:", error);
-            setEstado("desactivadas");
+            setMensajeSesion(null);
+        } catch (error: any) {
+            const status = error?.response?.status;
+            if (status === 401 || status === 403) {
+                // Sesión vencida: deshacer la suscripción local y avisar en español.
+                try {
+                    const registro = await navigator.serviceWorker.getRegistration(
+                        "/sw.js"
+                    );
+                    const suscripcionLocal =
+                        await registro?.pushManager.getSubscription();
+                    if (suscripcionLocal) {
+                        await suscripcionLocal.unsubscribe();
+                    }
+                } catch {
+                    // Ignorar errores al deshacer la suscripción local.
+                }
+                setMensajeSesion("Tu sesión venció, vuelve a entrar");
+                setEstado("desactivadas");
+            } else {
+                console.error("Error activando notificaciones:", error);
+                setEstado("desactivadas");
+            }
         } finally {
             setCargando(false);
         }
@@ -169,6 +203,7 @@ export default function PushNotifications() {
     // ------------------------------------------------------------------------
     const desactivar = useCallback(async () => {
         setCargando(true);
+        setMensajeSesion(null);
         try {
             const registro = await navigator.serviceWorker.getRegistration("/sw.js");
             if (!registro) {
@@ -180,13 +215,25 @@ export default function PushNotifications() {
             if (suscripcion) {
                 const endpoint = suscripcion.endpoint;
                 await suscripcion.unsubscribe();
-                await api.delete("/push/suscribir", {
-                    data: { endpoint },
-                });
+                try {
+                    await api.delete("/push/suscribir", {
+                        data: { endpoint },
+                    });
+                } catch (error: any) {
+                    const status = error?.response?.status;
+                    if (status === 401 || status === 403) {
+                        setMensajeSesion("Tu sesión venció, vuelve a entrar");
+                    }
+                }
             }
             setEstado("desactivadas");
-        } catch (error) {
-            console.error("Error desactivando notificaciones:", error);
+        } catch (error: any) {
+            const status = error?.response?.status;
+            if (status === 401 || status === 403) {
+                setMensajeSesion("Tu sesión venció, vuelve a entrar");
+            } else {
+                console.error("Error desactivando notificaciones:", error);
+            }
             setEstado("desactivadas");
         } finally {
             setCargando(false);
@@ -199,7 +246,7 @@ export default function PushNotifications() {
         "dirección web, busca 'Notificaciones' y cámbialo a 'Permitir'. Luego " +
         "vuelve a abrir el panel admin y presiona 'Activar notificaciones'.";
 
-    if (!esAdmin && !esLogin) {
+    if (!esAdmin || !haySesion) {
         return null;
     }
 
@@ -230,6 +277,30 @@ export default function PushNotifications() {
             >
                 <span>Notificaciones no disponibles</span>
             </button>
+        );
+    }
+
+    if (mensajeSesion) {
+        return (
+            <div
+                style={{
+                    position: "fixed",
+                    bottom: 80,
+                    right: 24,
+                    zIndex: 1000,
+                    maxWidth: 320,
+                    padding: "10px 14px",
+                    borderRadius: 12,
+                    background: "#fdeaea",
+                    color: "#b00020",
+                    fontSize: 13,
+                    lineHeight: 1.4,
+                    border: "1px solid #f5c6c6",
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                }}
+            >
+                {mensajeSesion}
+            </div>
         );
     }
 
