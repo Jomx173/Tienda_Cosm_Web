@@ -1,0 +1,31 @@
+{
+  "name": "MD Admin",
+  "short_name": "MD Admin",
+  "start_url": "/admin/pedidos",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF7F1",
+  "theme_color": "#701522",
+  "description": "Panel de administración de MD: productos, pedidos, categorías e imágenes/banners.",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import Productos from "./pages/Productos/Productos";
 import Categoria from "./pages/Categoria/Categoria";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import ScrollToTop from "./components/ScrollToTop/ScrollToTop";
+import PwaInstall from "./components/PwaInstall/PwaInstall";
 
 function App() {
     return (
@@ -99,6 +100,7 @@ function App() {
                     }
                 />
             </Routes>
+            <PwaInstall />
         </BrowserRouter>
     );
 }
