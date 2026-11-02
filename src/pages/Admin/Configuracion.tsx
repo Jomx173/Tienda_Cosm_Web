@@ -17,6 +17,7 @@ import {
     FaImages,
     FaDollarSign,
     FaSpinner,
+    FaBell,
 } from "react-icons/fa";
 
 import { toastExito, toastError } from "../../utils/toast";
@@ -35,6 +36,7 @@ import {
 import type { PlanRestauracion, ValidacionRespaldo } from "../../services/types";
 
 import "./Configuracion.css";
+import { usePushNotifications } from "../../components/PushNotifications/usePushNotifications";
 
 const FORMATO_IDENTIDAD = /^\d{4}-\d{4}-\d{5}$/;
 
@@ -94,6 +96,22 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
     const [modoRestauracion, setModoRestauracion] = useState<"combinar" | "reemplazar">("combinar");
     const [confirmacionRestauracion, setConfirmacionRestauracion] = useState(false);
     const [restaurando, setRestaurando] = useState(false);
+
+    // Notificaciones de pedidos (lógica compartida con el resto del admin)
+    const { estado, cargando: cargandoPush, mensajeSesion, activar, desactivar } =
+        usePushNotifications();
+
+    const estaActiva = estado === "activadas";
+
+    const estadoTexto =
+        estado === "cargando"
+            ? "Verificando..."
+            : {
+                  activadas: "Activadas",
+                  desactivadas: "Desactivadas",
+                  bloqueadas: "Bloqueadas",
+                  no_compatibles: "No compatibles con este navegador",
+              }[estado] || "Desactivadas";
 
     useEffect(() => {
         let activo = true;
@@ -487,11 +505,61 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
                         </div>
                     </form>
                 </section>
-            </div>
 
-            {/* =======================
-                COPIAS DE SEGURIDAD
-            ======================= */}
+                {/* =======================
+                    NOTIFICACIONES DE PEDIDOS
+                ======================= */}
+                <section className="configuracion-card configuracion-card--notificaciones">
+                    <header className="notificaciones-cabecera">
+                        <span className="notificaciones-icono">
+                            <FaBell />
+                        </span>
+                        <div>
+                            <h4>Notificaciones de pedidos</h4>
+                            <p className="notificaciones-descripcion">
+                                Recibe un aviso en este celular cuando llegue un
+                                pedido nuevo.
+                            </p>
+                        </div>
+                    </header>
+
+                    <p className="notificaciones-estado">
+                        <strong>Estado:</strong> {estadoTexto}
+                    </p>
+
+                    {mensajeSesion && (
+                        <p className="notificaciones-sesion">{mensajeSesion}</p>
+                    )}
+
+                    {estado === "bloqueadas" && (
+                        <p className="notificaciones-bloqueado">
+                            Las notificaciones están bloqueadas para este sitio.
+                            En Chrome, toca el ícono de candado junto a la
+                            dirección web, busca "Notificaciones" y cámbialo a
+                            "Permitir". Luego vuelve a abrir Configuración y
+                            presiona "Activar notificaciones".
+                        </p>
+                    )}
+
+                    <div className="form-actions">
+                        <button
+                            type="button"
+                            className={estaActiva ? "btn-cancelar" : "btn-guardar"}
+                            onClick={estaActiva ? desactivar : activar}
+                            disabled={cargandoPush}
+                        >
+                            {cargandoPush
+                                ? "Procesando..."
+                                : estaActiva
+                                ? "Desactivar notificaciones"
+                                : "Activar notificaciones"}
+                        </button>
+                    </div>
+                </section>
+
+                {/* =======================
+                    COPIAS DE SEGURIDAD
+                ======================= */}
             <section className="configuracion-card configuracion-card--ancho respaldo-panel">
                 <header className="respaldo-panel-cabecera">
                     <span className="respaldo-panel-icono">
@@ -777,6 +845,7 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
                     </div>
                 )}
             </section>
+            </div>
         </div>
     );
 }
