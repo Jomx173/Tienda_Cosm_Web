@@ -18,7 +18,10 @@ self.addEventListener("activate", (event) => {
     event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener("fetch", (event) => {
-    // Deja pasar la petición a la red, sin caché.
-    event.respondWith(fetch(event.request));
+self.addEventListener("fetch", () => {
+    // No intercepta ninguna petición: ni subidas de fotos (POST multipart),
+    // ni imágenes de Cloudinary, ni llamadas a la API. El service worker se
+    // registra solo para cumplir el requisito de instalación de la PWA, pero
+    // nunca toca el tráfico de red, por lo que la dueña nunca verá datos
+    // viejos ni fallarán las subidas.
 });
