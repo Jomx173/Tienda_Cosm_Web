@@ -32,6 +32,7 @@ import { obtenerPedidos } from "../../services/pedidoService";
 import type { Banner, Categoria, Pedido, Producto } from "../../services/types";
 import logo from "../../assets/logo/logo.png";
 import { formatearPrecio } from "../../utils/precio";
+import { prepararAudio, reproducirSonidoPedido } from "../../utils/sonidoPedido";
 import Dashboard from "./Dashboard";
 import Reportes from "./Reportes";
 import Configuracion from "./Configuracion";
@@ -100,45 +101,42 @@ function Admin() {
     const reproducirSonido = () => {
         if (!sonidoActivoRef.current) return;
 
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const Ctx: typeof AudioContext =
-                window.AudioContext || (window as any).webkitAudioContext;
-
-            const ctx = new Ctx();
-
-            const notas = [880, 1108];
-
-            notas.forEach((frecuencia, i) => {
-                const osc = ctx.createOscillator();
-                const ganancia = ctx.createGain();
-
-                osc.type = "sine";
-                osc.frequency.value = frecuencia;
-
-                ganancia.gain.setValueAtTime(0, ctx.currentTime + i * 0.2);
-                ganancia.gain.linearRampToValueAtTime(0.3, ctx.currentTime + i * 0.2 + 0.02);
-                ganancia.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.2 + 0.4);
-
-                osc.connect(ganancia);
-                ganancia.connect(ctx.destination);
-
-                osc.start(ctx.currentTime + i * 0.2);
-                osc.stop(ctx.currentTime + i * 0.2 + 0.45);
-            });
-        } catch {
-            // Sin audio disponible
-        }
+        // Aviso fuerte y repetido (3 ráfagas). El detalle está en utils/sonidoPedido.
+        reproducirSonidoPedido();
     };
 
     const mostrarNotificacion = (titulo: string, cuerpo: string) => {
         if (!("Notification" in window)) return;
+        if (Notification.permission !== "granted") return;
 
-        if (Notification.permission === "granted") {
-            new Notification(titulo, { body: cuerpo, icon: "/favicon.ico" });
-        } else if (Notification.permission !== "denied") {
-            void Notification.requestPermission();
+        const opciones: NotificationOptions = {
+            body: cuerpo,
+            icon: "/icons/icon-192.png",
+            badge: "/icons/icon-192.png",
+            tag: "pedido-nuevo",
+            requireInteraction: true,
+        };
+
+        // En Chrome Android `new Notification()` lanza "Illegal constructor":
+        // hay que mostrarla a través del service worker.
+        if ("serviceWorker" in navigator) {
+            void navigator.serviceWorker
+                .getRegistration()
+                .then((registro) => {
+                    if (registro) {
+                        return registro.showNotification(titulo, opciones);
+                    }
+
+                    new Notification(titulo, opciones);
+                    return undefined;
+                })
+                .catch(() => {
+                    // Sin service worker disponible: se ignora el aviso visual.
+                });
+            return;
         }
+
+        new Notification(titulo, opciones);
     };
 
     const navegar = useNavigate();
@@ -176,6 +174,14 @@ function Admin() {
         const alRedimensionar = () => setEsMovil(window.innerWidth <= 992);
         window.addEventListener("resize", alRedimensionar);
         return () => window.removeEventListener("resize", alRedimensionar);
+    }, []);
+
+    // Desbloquea el audio con el primer clic/toque: los navegadores no dejan
+    // reproducir sonido hasta que el usuario interactúa con la página.
+    useEffect(() => {
+        const desbloquear = () => prepararAudio();
+        document.addEventListener("pointerdown", desbloquear, { once: true });
+        return () => document.removeEventListener("pointerdown", desbloquear);
     }, []);
 
     const alternarSidebar = () => {

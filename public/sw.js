@@ -55,7 +55,10 @@ self.addEventListener("push", (event) => {
         tag: datos.tag || "pedido-nuevo",
         data: datos.data || {},
         renotify: true,
-        requireInteraction: false,
+        // Que no desaparezca sola: la dueña la ve aunque no esté mirando.
+        requireInteraction: true,
+        // Vibración en Android (en escritorio se ignora).
+        vibrate: [300, 120, 300, 120, 300],
     };
 
     event.waitUntil(self.registration.showNotification(datos.title, opciones));
