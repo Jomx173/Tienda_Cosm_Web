@@ -540,20 +540,21 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
                         <p className="notificaciones-sesion">{mensajeSesion}</p>
                     )}
 
+                    {mensajeServidor && (
+                        <p className="notificaciones-sesion">{mensajeServidor}</p>
+                    )}
+
                     {estado === "error_servidor" && (
-                        <>
-                            <p className="notificaciones-sesion">{mensajeServidor}</p>
-                            <div className="form-actions">
-                                <button
-                                    type="button"
-                                    className="btn-guardar"
-                                    onClick={reintentar}
-                                    disabled={registrando}
-                                >
-                                    {registrando ? "Registrando..." : "Reintentar"}
-                                </button>
-                            </div>
-                        </>
+                        <div className="form-actions">
+                            <button
+                                type="button"
+                                className="btn-guardar"
+                                onClick={reintentar}
+                                disabled={registrando}
+                            >
+                                {registrando ? "Registrando..." : "Reintentar"}
+                            </button>
+                        </div>
                     )}
 
                     {estado === "bloqueadas" && (

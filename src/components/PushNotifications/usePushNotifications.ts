@@ -196,9 +196,21 @@ export function usePushNotifications() {
 
             // 3. Pide la clave pública VAPID.
             const respuestaClave = await api.get("/push/clave");
-            const clavePublica =
-                (respuestaClave.data as { clavePublica: string | null })?.clavePublica;
+            const datosClave = respuestaClave.data as {
+                clavePublica: string | null;
+                habilitado?: boolean;
+                motivo?: string | null;
+            };
+            const clavePublica = datosClave?.clavePublica;
+
             if (!clavePublica) {
+                // El servidor no tiene VAPID configurado: se explica el motivo
+                // en vez de dejar el botón "muerto" en Desactivadas.
+                setMensajeServidor(
+                    datosClave?.motivo
+                        ? `No se pudo activar: ${datosClave.motivo}.`
+                        : "El servidor no tiene configuradas las notificaciones push (claves VAPID)."
+                );
                 setEstado("desactivadas");
                 return;
             }
@@ -237,6 +249,9 @@ export function usePushNotifications() {
                 setEstado("desactivadas");
             } else {
                 console.error("Error activando notificaciones:", error);
+                setMensajeServidor(
+                    "No se pudieron activar las notificaciones. Revisa los permisos del navegador e intenta de nuevo."
+                );
                 setEstado("desactivadas");
             }
         } finally {
