@@ -1,14 +1,164 @@
 /**
  * Aviso sonoro de "pedido nuevo" del panel.
  *
- * El sonido anterior (dos pitidos senoidales a 0.3 de volumen) se perdía con
- * el ruido de la tienda. Este usa onda cuadrada (más penetrante), tres
- * ráfagas de dos tonos y un volumen alto, sin llegar a saturar.
+ * Incluye varios timbres, la preferencia guardada en el dispositivo y la
+ * duración del aviso continuo. El sonido se sintetiza con Web Audio (sin
+ * archivos de audio): así no hay que descargar nada y se puede ajustar el
+ * volumen y el patrón.
  *
  * Nota: el volumen final depende del dispositivo y del volumen del sistema.
  * En el móvil, con la app cerrada, suena la notificación del sistema (esa no
  * se puede ampliar desde aquí).
  */
+
+export type TimbreId = "clasico" | "campana" | "puerta" | "alarma" | "suave";
+
+export type Timbre = {
+    id: TimbreId;
+    nombre: string;
+    descripcion: string;
+    onda: OscillatorType;
+    /** Frecuencias de cada nota, en Hz. */
+    tonos: number[];
+    /** Duración de cada nota, en segundos. */
+    duracion: number;
+    /** Silencio entre notas, en segundos. */
+    separacion: number;
+    /** Silencio después de la ráfaga, en segundos. */
+    pausa: number;
+    /** Cuántas veces se repite la ráfaga dentro de un aviso. */
+    rafagas: number;
+    /** Volumen del timbre (0 a 1). */
+    volumen: number;
+    /** Cada cuántos ms se repite el aviso mientras está activo. */
+    intervalo: number;
+};
+
+export const TIMBRES: Timbre[] = [
+    {
+        id: "clasico",
+        nombre: "Clásico",
+        descripcion: "Pitido doble, insistente.",
+        onda: "square",
+        tonos: [988, 1319],
+        duracion: 0.18,
+        separacion: 0.06,
+        pausa: 0.22,
+        rafagas: 3,
+        volumen: 0.85,
+        intervalo: 2500,
+    },
+    {
+        id: "campana",
+        nombre: "Campana",
+        descripcion: "Ding-dong largo y claro.",
+        onda: "sine",
+        tonos: [1046, 1568],
+        duracion: 0.75,
+        separacion: 0.06,
+        pausa: 0.2,
+        rafagas: 1,
+        volumen: 0.95,
+        intervalo: 2600,
+    },
+    {
+        id: "puerta",
+        nombre: "Timbre de puerta",
+        descripcion: "Dos notas suaves.",
+        onda: "sine",
+        tonos: [659, 523],
+        duracion: 0.5,
+        separacion: 0.32,
+        pausa: 0.3,
+        rafagas: 1,
+        volumen: 0.9,
+        intervalo: 3000,
+    },
+    {
+        id: "alarma",
+        nombre: "Alarma",
+        descripcion: "Rápida y urgente.",
+        onda: "sawtooth",
+        tonos: [740, 988],
+        duracion: 0.13,
+        separacion: 0.03,
+        pausa: 0.08,
+        rafagas: 6,
+        volumen: 0.6,
+        intervalo: 1600,
+    },
+    {
+        id: "suave",
+        nombre: "Suave",
+        descripcion: "Aviso discreto.",
+        onda: "triangle",
+        tonos: [523, 659],
+        duracion: 0.3,
+        separacion: 0.1,
+        pausa: 0.2,
+        rafagas: 2,
+        volumen: 0.55,
+        intervalo: 2800,
+    },
+];
+
+const TIMBRE_POR_DEFECTO: TimbreId = "clasico";
+const DURACION_POR_DEFECTO = 90;
+
+const CLAVE_TIMBRE = "md_aviso_timbre";
+const CLAVE_DURACION = "md_aviso_duracion";
+
+const obtenerTimbrePorId = (id: TimbreId): Timbre =>
+    TIMBRES.find((timbre) => timbre.id === id) || TIMBRES[0];
+
+export const obtenerTimbreGuardado = (): TimbreId => {
+    try {
+        const guardado = localStorage.getItem(CLAVE_TIMBRE);
+
+        if (guardado && TIMBRES.some((timbre) => timbre.id === guardado)) {
+            return guardado as TimbreId;
+        }
+    } catch {
+        // Sin almacenamiento disponible.
+    }
+
+    return TIMBRE_POR_DEFECTO;
+};
+
+export const guardarTimbre = (id: TimbreId): void => {
+    try {
+        localStorage.setItem(CLAVE_TIMBRE, id);
+    } catch {
+        // Sin almacenamiento disponible.
+    }
+};
+
+/**
+ * Duración en segundos. 0 significa "hasta que lo atienda".
+ */
+export const obtenerDuracionGuardada = (): number => {
+    try {
+        const guardado = localStorage.getItem(CLAVE_DURACION);
+
+        if (guardado !== null) {
+            const numero = Number(guardado);
+
+            if (Number.isFinite(numero) && numero >= 0) return numero;
+        }
+    } catch {
+        // Sin almacenamiento disponible.
+    }
+
+    return DURACION_POR_DEFECTO;
+};
+
+export const guardarDuracion = (segundos: number): void => {
+    try {
+        localStorage.setItem(CLAVE_DURACION, String(segundos));
+    } catch {
+        // Sin almacenamiento disponible.
+    }
+};
 
 let contexto: AudioContext | null = null;
 let temporizadorRepeticion: number | null = null;
@@ -67,64 +217,65 @@ export const prepararAudio = (): void => {
     obtenerContexto();
 };
 
+const programarTimbre = (
+    ctx: AudioContext,
+    timbre: Timbre,
+    cuando: number
+): void => {
+    const maestro = ctx.createGain();
+    maestro.gain.value = timbre.volumen;
+    maestro.connect(ctx.destination);
+
+    const duracionRafaga =
+        timbre.tonos.length * (timbre.duracion + timbre.separacion) +
+        timbre.pausa;
+
+    for (let rafaga = 0; rafaga < timbre.rafagas; rafaga++) {
+        const inicioRafaga = cuando + rafaga * duracionRafaga;
+
+        timbre.tonos.forEach((frecuencia, indice) => {
+            const inicio = inicioRafaga + indice * (timbre.duracion + timbre.separacion);
+
+            const oscilador = ctx.createOscillator();
+            const ganancia = ctx.createGain();
+
+            oscilador.type = timbre.onda;
+            oscilador.frequency.setValueAtTime(frecuencia, inicio);
+
+            ganancia.gain.setValueAtTime(0.0001, inicio);
+            ganancia.gain.exponentialRampToValueAtTime(1, inicio + 0.012);
+            ganancia.gain.exponentialRampToValueAtTime(
+                0.0001,
+                inicio + timbre.duracion
+            );
+
+            oscilador.connect(ganancia);
+            ganancia.connect(maestro);
+
+            osciladoresActivos.push(oscilador);
+            oscilador.onended = () => {
+                const posicion = osciladoresActivos.indexOf(oscilador);
+                if (posicion >= 0) osciladoresActivos.splice(posicion, 1);
+            };
+
+            oscilador.start(inicio);
+            oscilador.stop(inicio + timbre.duracion + 0.02);
+        });
+    }
+};
+
 /**
- * Reproduce el aviso de pedido nuevo: 3 ráfagas de dos tonos (~1,6 s).
+ * Reproduce una sola vez el timbre indicado (o el guardado si no se indica).
  */
-export const reproducirSonidoPedido = (): void => {
+export const reproducirSonidoPedido = (timbreId?: TimbreId): void => {
     const ctx = obtenerContexto();
 
     if (!ctx) return;
 
+    const timbre = obtenerTimbrePorId(timbreId || obtenerTimbreGuardado());
+
     try {
-        const ahora = ctx.currentTime;
-
-        // Volumen general. 0.85 con onda cuadrada suena fuerte sin saturar.
-        const maestro = ctx.createGain();
-        maestro.gain.value = 0.85;
-        maestro.connect(ctx.destination);
-
-        const TONOS = [988, 1319]; // B5 y E6: muy audibles en móvil
-        const DURACION = 0.18;
-        const SEPARACION = 0.06;
-        const PAUSA_ENTRE_RAFAGAS = 0.22;
-        const RAFAGAS = 3;
-
-        const duracionRafaga =
-            TONOS.length * (DURACION + SEPARACION) + PAUSA_ENTRE_RAFAGAS;
-
-        for (let rafaga = 0; rafaga < RAFAGAS; rafaga++) {
-            const inicioRafaga = ahora + rafaga * duracionRafaga;
-
-            TONOS.forEach((frecuencia, indice) => {
-                const inicio =
-                    inicioRafaga + indice * (DURACION + SEPARACION);
-
-                const oscilador = ctx.createOscillator();
-                const ganancia = ctx.createGain();
-
-                oscilador.type = "square";
-                oscilador.frequency.setValueAtTime(frecuencia, inicio);
-
-                ganancia.gain.setValueAtTime(0.0001, inicio);
-                ganancia.gain.exponentialRampToValueAtTime(1, inicio + 0.01);
-                ganancia.gain.exponentialRampToValueAtTime(
-                    0.0001,
-                    inicio + DURACION
-                );
-
-                oscilador.connect(ganancia);
-                ganancia.connect(maestro);
-
-                osciladoresActivos.push(oscilador);
-                oscilador.onended = () => {
-                    const indice = osciladoresActivos.indexOf(oscilador);
-                    if (indice >= 0) osciladoresActivos.splice(indice, 1);
-                };
-
-                oscilador.start(inicio);
-                oscilador.stop(inicio + DURACION + 0.02);
-            });
-        }
+        programarTimbre(ctx, timbre, ctx.currentTime);
 
         // Vibración en Android (en escritorio no hace nada).
         if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -140,24 +291,28 @@ export const reproducirSonidoPedido = (): void => {
 };
 
 /**
- * Arranca el aviso continuo: repite el sonido cada 2,5 s hasta que el usuario
- * toque la pantalla o pase el tiempo máximo (90 s por defecto).
+ * Arranca el aviso continuo.
  *
- * Pensado para que un pedido no se pierda si la dueña está lejos del móvil,
- * sin quedar sonando para siempre si nadie lo atiende.
+ * @param duracionMaximaSegundos 0 = "hasta que lo atienda" (sin límite).
+ * @param detenerAlTocar         si true, cualquier clic/toque lo detiene.
+ * @param timbreId               fuerza un timbre (para la prueba); si no, usa el guardado.
  */
 export const iniciarAvisoPedido = (
-    duracionMaximaSegundos = 90,
-    detenerAlTocar = true
+    duracionMaximaSegundos?: number,
+    detenerAlTocar = true,
+    timbreId?: TimbreId
 ): void => {
+    const duracion = duracionMaximaSegundos ?? obtenerDuracionGuardada();
+    const timbre = obtenerTimbrePorId(timbreId || obtenerTimbreGuardado());
+
     // Si ya estaba sonando, se reinicia (pedido nuevo, cuenta nueva).
     detenerAvisoPedido();
 
-    reproducirSonidoPedido();
+    reproducirSonidoPedido(timbre.id);
 
     temporizadorRepeticion = window.setInterval(() => {
-        reproducirSonidoPedido();
-    }, 2500);
+        reproducirSonidoPedido(timbre.id);
+    }, timbre.intervalo);
 
     if (detenerAlTocar) {
         // Cualquier toque/clic en el panel se considera "ya lo atendió".
@@ -167,9 +322,11 @@ export const iniciarAvisoPedido = (
         });
     }
 
-    temporizadorMaximo = window.setTimeout(() => {
-        detenerAvisoPedido();
-    }, duracionMaximaSegundos * 1000);
+    if (duracion > 0) {
+        temporizadorMaximo = window.setTimeout(() => {
+            detenerAvisoPedido();
+        }, duracion * 1000);
+    }
 };
 
 /**

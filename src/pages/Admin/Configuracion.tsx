@@ -23,8 +23,14 @@ import {
 import { toastExito, toastError } from "../../utils/toast";
 import {
     detenerAvisoPedido,
-    hayAvisoActivo,
+    guardarDuracion,
+    guardarTimbre,
     iniciarAvisoPedido,
+    obtenerDuracionGuardada,
+    obtenerTimbreGuardado,
+    reproducirSonidoPedido,
+    TIMBRES,
+    type TimbreId,
 } from "../../utils/sonidoPedido";
 import {
     obtenerPerfil,
@@ -115,6 +121,28 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
     } = usePushNotifications();
 
     const estaActiva = estado === "activadas";
+
+    // Preferencias del aviso sonoro (se guardan en este dispositivo).
+    const [timbreSeleccionado, setTimbreSeleccionado] = useState<TimbreId>(() =>
+        obtenerTimbreGuardado()
+    );
+    const [duracionAviso, setDuracionAviso] = useState<number>(() =>
+        obtenerDuracionGuardada()
+    );
+    const [probandoAviso, setProbandoAviso] = useState(false);
+
+    const probarAviso = () => {
+        if (probandoAviso) {
+            detenerAvisoPedido();
+            setProbandoAviso(false);
+            return;
+        }
+
+        // Prueba corta (10 s) para no tener que esperar un pedido real.
+        iniciarAvisoPedido(10, false, timbreSeleccionado);
+        setProbandoAviso(true);
+        window.setTimeout(() => setProbandoAviso(false), 10000);
+    };
 
     const estadoTexto =
         estado === "cargando"
@@ -586,23 +614,90 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
                                     ? "Desactivar notificaciones"
                                     : "Activar notificaciones"}
                             </button>
+                        </div>
+                    )}
 
+                    <div className="aviso-preferencias">
+                        <h5>Timbre de pedidos</h5>
+                        <p className="aviso-preferencias-desc">
+                            Elige cómo suena el aviso y cuánto tiempo insiste.
+                            La elección se guarda en este dispositivo.
+                        </p>
+
+                        <div
+                            className="aviso-timbres"
+                            role="radiogroup"
+                            aria-label="Timbre del aviso de pedidos"
+                        >
+                            {TIMBRES.map((timbre) => (
+                                <div
+                                    key={timbre.id}
+                                    className={
+                                        timbreSeleccionado === timbre.id
+                                            ? "aviso-timbre activo"
+                                            : "aviso-timbre"
+                                    }
+                                >
+                                    <label className="aviso-timbre-radio">
+                                        <input
+                                            type="radio"
+                                            name="timbre-pedido"
+                                            value={timbre.id}
+                                            checked={timbreSeleccionado === timbre.id}
+                                            onChange={() => {
+                                                setTimbreSeleccionado(timbre.id);
+                                                guardarTimbre(timbre.id);
+                                                reproducirSonidoPedido(timbre.id);
+                                            }}
+                                        />
+
+                                        <span className="aviso-timbre-texto">
+                                            <strong>{timbre.nombre}</strong>
+                                            <small>{timbre.descripcion}</small>
+                                        </span>
+                                    </label>
+
+                                    <button
+                                        type="button"
+                                        className="aviso-timbre-escuchar"
+                                        onClick={() => reproducirSonidoPedido(timbre.id)}
+                                    >
+                                        Escuchar
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        <label className="aviso-duracion">
+                            <span>Duración del aviso</span>
+
+                            <select
+                                value={duracionAviso}
+                                onChange={(evento) => {
+                                    const valor = Number(evento.target.value);
+                                    setDuracionAviso(valor);
+                                    guardarDuracion(valor);
+                                }}
+                            >
+                                <option value={15}>15 segundos</option>
+                                <option value={30}>30 segundos</option>
+                                <option value={60}>1 minuto</option>
+                                <option value={90}>1 minuto y medio</option>
+                                <option value={120}>2 minutos</option>
+                                <option value={0}>Hasta que lo atienda</option>
+                            </select>
+                        </label>
+
+                        <div className="form-actions">
                             <button
                                 type="button"
                                 className="btn-cancelar"
-                                onClick={() => {
-                                    if (hayAvisoActivo()) {
-                                        detenerAvisoPedido();
-                                    } else {
-                                        iniciarAvisoPedido(15, false);
-                                    }
-                                }}
-                                title="Escuchar el aviso de pedido nuevo (se detiene al tocar)"
+                                onClick={probarAviso}
                             >
-                                Probar sonido
+                                {probandoAviso ? "Detener prueba" : "Probar aviso"}
                             </button>
                         </div>
-                    )}
+                    </div>
                 </section>
 
                 {/* =======================

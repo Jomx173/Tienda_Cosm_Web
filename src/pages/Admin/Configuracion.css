@@ -865,6 +865,140 @@
     line-height:1.6;
 }
 
+/* --- Timbre y duración del aviso --- */
+
+.aviso-preferencias{
+    margin-top:20px;
+    padding-top:18px;
+    border-top:1px solid var(--np-borde);
+}
+
+.aviso-preferencias h5{
+    margin:0;
+    font-family:'Playfair Display',serif;
+    color:var(--np-vino);
+    font-size:15.5px;
+}
+
+.aviso-preferencias-desc{
+    margin:4px 0 14px;
+    font-size:12.5px;
+    color:var(--np-texto-suave);
+    line-height:1.55;
+}
+
+.aviso-timbres{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.aviso-timbre{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 12px;
+    border:1px solid var(--np-borde);
+    border-radius:12px;
+    background:#fff;
+    transition:border-color .15s, background .15s;
+}
+
+.aviso-timbre.activo{
+    border-color:var(--np-vino);
+    background:var(--np-crema);
+}
+
+.aviso-timbre-radio{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    cursor:pointer;
+    flex:1;
+    min-width:0;
+}
+
+.aviso-timbre-radio input{
+    accent-color:var(--np-vino);
+    width:16px;
+    height:16px;
+    flex:none;
+}
+
+.aviso-timbre-texto{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+}
+
+.aviso-timbre-texto strong{
+    font-size:13.5px;
+    color:var(--np-texto);
+    font-weight:600;
+}
+
+.aviso-timbre-texto small{
+    font-size:12px;
+    color:var(--np-texto-suave);
+}
+
+.aviso-timbre-escuchar{
+    border:1px solid var(--np-vino);
+    background:transparent;
+    color:var(--np-vino);
+    border-radius:999px;
+    padding:6px 12px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    flex:none;
+}
+
+.aviso-timbre-escuchar:hover{
+    background:var(--np-vino);
+    color:#fff;
+}
+
+.aviso-duracion{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-top:14px;
+    font-size:13px;
+    color:var(--np-texto);
+}
+
+.aviso-duracion select{
+    border:1px solid var(--np-borde);
+    border-radius:10px;
+    padding:8px 10px;
+    background:#fff;
+    color:var(--np-texto);
+    font-size:13px;
+    cursor:pointer;
+}
+
+@media(max-width:620px){
+    .aviso-timbre{
+        flex-wrap:wrap;
+    }
+
+    .aviso-timbre-escuchar{
+        margin-left:26px;
+    }
+
+    .aviso-duracion{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+
+    .aviso-duracion select{
+        width:100%;
+    }
+}
+
 @media(max-width:620px){
     .configuracion-card--notificaciones{
         padding:18px 16px;
