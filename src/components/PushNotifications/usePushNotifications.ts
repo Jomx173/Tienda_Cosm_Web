@@ -2,24 +2,35 @@ import { useCallback, useEffect, useState } from "react";
 
 import api from "../../services/api";
 
-type EstadoPush = "cargando" | "activadas" | "desactivadas" | "bloqueadas" | "no_compatibles";
+type EstadoPush =
+    | "cargando"
+    | "activadas"
+    | "desactivadas"
+    | "bloqueadas"
+    | "no_compatibles"
+    | "error_servidor";
 
 /**
  * Lógica de notificaciones push de pedidos (sin interfaz).
  *
  * Se encarga de:
- *   - Comprobar al montar si ya hay una suscripción (getSubscription) y
- *     mostrar el estado real sin duplicar nada.
+ *   - Comprobar al montar si ya hay una suscripción en el navegador y, si la
+ *     hay, reenviarla a POST /api/push/suscribir. Solo se muestra "activadas"
+ *     si el servidor la aceptó (200/201).
  *   - Activar: pedir permiso, registrar SW, obtener clave pública VAPID de
  *     GET /api/push/clave, suscribirse y enviar a POST /api/push/suscribir.
+ *     No se confirma hasta que el POST responda bien; si falla, se hace
+ *     unsubscribe local para no dejar una suscripción a medias.
  *   - Desactivar: unsubscribe y DELETE /api/push/suscribir.
- *   - Manejar 401/403: mensaje "Tu sesión venció, vuelve a entrar" y deshacer
- *     la suscripción local si el POST falló.
+ *   - Reintentar: reenvía la suscripción local existente al servidor.
+ *   - Manejar 401/403: mensaje "Tu sesión venció, vuelve a entrar".
  */
 export function usePushNotifications() {
     const [estado, setEstado] = useState<EstadoPush>("cargando");
     const [cargando, setCargando] = useState(false);
+    const [registrando, setRegistrando] = useState(false);
     const [mensajeSesion, setMensajeSesion] = useState<string | null>(null);
+    const [mensajeServidor, setMensajeServidor] = useState<string | null>(null);
 
     const esAdmin = window.location.pathname.startsWith("/admin");
     const haySesion = !!localStorage.getItem("token");
@@ -31,19 +42,75 @@ export function usePushNotifications() {
         !!("PushManager" in window) &&
         typeof Notification !== "undefined";
 
+    /**
+     * Envía una suscripción ya existente al servidor.
+     * Devuelve true si el servidor aceptó (200/201). En caso contrario pone el
+     * estado y mensaje adecuados y devuelve false.
+     */
+    const registrarEnServidor = async (
+        suscripcion: PushSubscription
+    ): Promise<boolean> => {
+        const rawKey = suscripcion.getKey?.("p256dh");
+        const rawAuth = suscripcion.getKey?.("auth");
+        const p256dh = rawKey
+            ? btoa(String.fromCharCode(...new Uint8Array(rawKey)))
+            : "";
+        const auth = rawAuth
+            ? btoa(String.fromCharCode(...new Uint8Array(rawAuth)))
+            : "";
+        try {
+            const respuesta = await api.post("/push/suscribir", {
+                endpoint: suscripcion.endpoint,
+                p256dh,
+                auth,
+                user_agent: navigator.userAgent,
+            });
+            const status = respuesta.status;
+            if (status === 200 || status === 201) {
+                setMensajeServidor(null);
+                return true;
+            }
+            throw new Error(`Status ${status}`);
+        } catch (error: any) {
+            const status = error?.response?.status;
+            const data = error?.response?.data;
+            const mensajeDelServidor =
+                data?.mensaje || error?.message || "Error desconocido";
+            console.error(
+                `[push] POST /push/suscribir falló (${status}): ${mensajeDelServidor}`
+            );
+            if (status === 401 || status === 403) {
+                setMensajeServidor(null);
+                setMensajeSesion("Tu sesión venció, vuelve a entrar");
+                setEstado("desactivadas");
+            } else {
+                setMensajeSesion(null);
+                setMensajeServidor(
+                    "No se pudo registrar este dispositivo en el servidor"
+                );
+                setEstado("error_servidor");
+            }
+            return false;
+        }
+    };
+
     // ------------------------------------------------------------------------
-    // Comprueba el estado inicial al montar: ¿ya hay suscripción?
+    // Comprueba el estado inicial al montar: ¿ya hay suscripción local?
+    // Si la hay, la reenvía al servidor. Solo se muestra "activadas" si el
+    // servidor la aceptó.
     // ------------------------------------------------------------------------
     useEffect(() => {
         if (!esAdmin || !haySesion) {
             setEstado("desactivadas");
             setMensajeSesion(null);
+            setMensajeServidor(null);
             return;
         }
 
         if (!esCompatible) {
             setEstado("no_compatibles");
             setMensajeSesion(null);
+            setMensajeServidor(null);
             return;
         }
 
@@ -58,6 +125,7 @@ export function usePushNotifications() {
                     if (montado) {
                         setEstado("desactivadas");
                         setMensajeSesion(null);
+                        setMensajeServidor(null);
                     }
                     return;
                 }
@@ -65,14 +133,22 @@ export function usePushNotifications() {
                     await registro.pushManager.getSubscription();
                 if (montado) {
                     if (suscripcion) {
-                        setEstado("activadas");
-                        setMensajeSesion(null);
+                        const aceptada = await registrarEnServidor(suscripcion);
+                        if (montado && aceptada) {
+                            setEstado("activadas");
+                            setMensajeSesion(null);
+                            setMensajeServidor(null);
+                        }
+                        // Si no fue aceptada, registrarEnServidor ya puso el
+                        // estado (error_servidor o desactivadas por 401/403).
                     } else if (Notification.permission === "denied") {
                         setEstado("bloqueadas");
                         setMensajeSesion(null);
+                        setMensajeServidor(null);
                     } else {
                         setEstado("desactivadas");
                         setMensajeSesion(null);
+                        setMensajeServidor(null);
                     }
                 }
             } catch {
@@ -83,6 +159,7 @@ export function usePushNotifications() {
                             : "desactivadas"
                     );
                     setMensajeSesion(null);
+                    setMensajeServidor(null);
                 }
             }
         })();
@@ -99,6 +176,7 @@ export function usePushNotifications() {
     const activar = useCallback(async () => {
         setCargando(true);
         setMensajeSesion(null);
+        setMensajeServidor(null);
         try {
             // 1. Pide permiso de notificaciones.
             const permiso = await Notification.requestPermission();
@@ -134,40 +212,27 @@ export function usePushNotifications() {
             const suscripcion =
                 await registro.pushManager.subscribe(opciones);
 
-            // 5. Envía la suscripción al servidor.
-            const rawKey = suscripcion.getKey?.("p256dh");
-            const rawAuth = suscripcion.getKey?.("auth");
-            const p256dh = rawKey
-                ? btoa(String.fromCharCode(...new Uint8Array(rawKey)))
-                : "";
-            const auth = rawAuth
-                ? btoa(String.fromCharCode(...new Uint8Array(rawAuth)))
-                : "";
-            await api.post("/push/suscribir", {
-                endpoint: suscripcion.endpoint,
-                p256dh: p256dh,
-                auth: auth,
-                user_agent: navigator.userAgent,
-            });
-
-            setEstado("activadas");
-            setMensajeSesion(null);
-        } catch (error: any) {
-            const status = error?.response?.status;
-            if (status === 401 || status === 403) {
-                // Sesión vencida: deshacer la suscripción local y avisar en español.
+            // 5. Envía la suscripción al servidor. No se confirma hasta que
+            //    responda bien; si falla, se deshace la suscripción local.
+            const aceptada = await registrarEnServidor(suscripcion);
+            if (aceptada) {
+                setEstado("activadas");
+                setMensajeSesion(null);
+                setMensajeServidor(null);
+            } else {
+                // Si el servidor no la aceptó, quitar la suscripción local
+                // para no dejarla a medias. (registrarEnServidor ya puso el
+                // estado: error_servidor o desactivadas por 401/403.)
                 try {
-                    const registro = await navigator.serviceWorker.getRegistration(
-                        "/sw.js"
-                    );
-                    const suscripcionLocal =
-                        await registro?.pushManager.getSubscription();
-                    if (suscripcionLocal) {
-                        await suscripcionLocal.unsubscribe();
-                    }
+                    await suscripcion.unsubscribe();
                 } catch {
                     // Ignorar errores al deshacer la suscripción local.
                 }
+            }
+        } catch (error: any) {
+            const status = error?.response?.status;
+            if (status === 401 || status === 403) {
+                setMensajeServidor(null);
                 setMensajeSesion("Tu sesión venció, vuelve a entrar");
                 setEstado("desactivadas");
             } else {
@@ -180,11 +245,50 @@ export function usePushNotifications() {
     }, []);
 
     // ------------------------------------------------------------------------
+    // Reintenta registrar la suscripción local existente en el servidor.
+    // ------------------------------------------------------------------------
+    const reintentar = useCallback(async () => {
+        setRegistrando(true);
+        setMensajeServidor(null);
+        try {
+            const registro = await navigator.serviceWorker.getRegistration(
+                "/sw.js"
+            );
+            if (!registro) {
+                setRegistrando(false);
+                setEstado("desactivadas");
+                return;
+            }
+            const suscripcion =
+                await registro.pushManager.getSubscription();
+            if (!suscripcion) {
+                setRegistrando(false);
+                setEstado("desactivadas");
+                return;
+            }
+            const aceptada = await registrarEnServidor(suscripcion);
+            setRegistrando(false);
+            if (aceptada) {
+                setEstado("activadas");
+                setMensajeSesion(null);
+            }
+            // Si no fue aceptada, registrarEnServidor ya puso el estado.
+        } catch {
+            setRegistrando(false);
+            setMensajeServidor(
+                "No se pudo registrar este dispositivo en el servidor"
+            );
+            setEstado("error_servidor");
+        }
+    }, []);
+
+    // ------------------------------------------------------------------------
     // Desactiva las notificaciones.
     // ------------------------------------------------------------------------
     const desactivar = useCallback(async () => {
         setCargando(true);
         setMensajeSesion(null);
+        setMensajeServidor(null);
         try {
             const registro = await navigator.serviceWorker.getRegistration("/sw.js");
             if (!registro) {
@@ -224,9 +328,12 @@ export function usePushNotifications() {
     return {
         estado,
         cargando,
+        registrando,
         mensajeSesion,
+        mensajeServidor,
         activar,
         desactivar,
+        reintentar,
         esAdmin,
         haySesion,
         esCompatible,

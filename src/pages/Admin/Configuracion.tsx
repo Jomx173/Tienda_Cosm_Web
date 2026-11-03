@@ -98,8 +98,16 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
     const [restaurando, setRestaurando] = useState(false);
 
     // Notificaciones de pedidos (lógica compartida con el resto del admin)
-    const { estado, cargando: cargandoPush, mensajeSesion, activar, desactivar } =
-        usePushNotifications();
+    const {
+        estado,
+        cargando: cargandoPush,
+        registrando,
+        mensajeSesion,
+        mensajeServidor,
+        activar,
+        desactivar,
+        reintentar,
+    } = usePushNotifications();
 
     const estaActiva = estado === "activadas";
 
@@ -111,6 +119,7 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
                   desactivadas: "Desactivadas",
                   bloqueadas: "Bloqueadas",
                   no_compatibles: "No compatibles con este navegador",
+                  error_servidor: "Error al registrar",
               }[estado] || "Desactivadas";
 
     useEffect(() => {
@@ -531,6 +540,22 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
                         <p className="notificaciones-sesion">{mensajeSesion}</p>
                     )}
 
+                    {estado === "error_servidor" && (
+                        <>
+                            <p className="notificaciones-sesion">{mensajeServidor}</p>
+                            <div className="form-actions">
+                                <button
+                                    type="button"
+                                    className="btn-guardar"
+                                    onClick={reintentar}
+                                    disabled={registrando}
+                                >
+                                    {registrando ? "Registrando..." : "Reintentar"}
+                                </button>
+                            </div>
+                        </>
+                    )}
+
                     {estado === "bloqueadas" && (
                         <p className="notificaciones-bloqueado">
                             Las notificaciones están bloqueadas para este sitio.
@@ -541,20 +566,22 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
                         </p>
                     )}
 
-                    <div className="form-actions">
-                        <button
-                            type="button"
-                            className={estaActiva ? "btn-cancelar" : "btn-guardar"}
-                            onClick={estaActiva ? desactivar : activar}
-                            disabled={cargandoPush}
-                        >
-                            {cargandoPush
-                                ? "Procesando..."
-                                : estaActiva
-                                ? "Desactivar notificaciones"
-                                : "Activar notificaciones"}
-                        </button>
-                    </div>
+                    {estado !== "error_servidor" && (
+                        <div className="form-actions">
+                            <button
+                                type="button"
+                                className={estaActiva ? "btn-cancelar" : "btn-guardar"}
+                                onClick={estaActiva ? desactivar : activar}
+                                disabled={cargandoPush}
+                            >
+                                {cargandoPush
+                                    ? "Procesando..."
+                                    : estaActiva
+                                    ? "Desactivar notificaciones"
+                                    : "Activar notificaciones"}
+                            </button>
+                        </div>
+                    )}
                 </section>
 
                 {/* =======================
