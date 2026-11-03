@@ -32,7 +32,12 @@ import { obtenerPedidos } from "../../services/pedidoService";
 import type { Banner, Categoria, Pedido, Producto } from "../../services/types";
 import logo from "../../assets/logo/logo.png";
 import { formatearPrecio } from "../../utils/precio";
-import { prepararAudio, reproducirSonidoPedido } from "../../utils/sonidoPedido";
+import {
+    detenerAvisoPedido,
+    iniciarAvisoPedido,
+    prepararAudio,
+    reproducirSonidoPedido,
+} from "../../utils/sonidoPedido";
 import Dashboard from "./Dashboard";
 import Reportes from "./Reportes";
 import Configuracion from "./Configuracion";
@@ -184,6 +189,11 @@ function Admin() {
         return () => document.removeEventListener("pointerdown", desbloquear);
     }, []);
 
+    // Al salir del panel, que no quede el aviso sonando.
+    useEffect(() => {
+        return () => detenerAvisoPedido();
+    }, []);
+
     const alternarSidebar = () => {
         if (esMovil) {
             setMenuAbierto((m) => !m);
@@ -239,6 +249,7 @@ function Admin() {
 
     const handleLogout = () => {
         try {
+            detenerAvisoPedido();
             logout();
             dispatch(ActionAuth.setAutenticado(false));
             dispatch(ActionAuth.setAdmin(null));
@@ -334,7 +345,12 @@ function Admin() {
 
                     const numeroNuevo = `#${nuevos[0].id_pedido}`;
 
-                    reproducirSonido();
+                    if (sonidoActivoRef.current) {
+                        // Aviso continuo hasta que la dueña toque la pantalla
+                        // (máximo 90 s).
+                        iniciarAvisoPedido();
+                    }
+
                     mostrarNotificacion(
                         "Nuevo pedido en MD 🛍️",
                         `${numeroNuevo} de ${nuevos[0].nombre_cliente || "un cliente"} por ${formatearPrecio(nuevos[0].total)}`
@@ -444,7 +460,11 @@ function Admin() {
                                 onClick={() => {
                                     sonidoActivoRef.current = !sonidoActivoRef.current;
                                     setSonidoActivo(sonidoActivoRef.current);
-                                    reproducirSonido();
+                                    if (sonidoActivoRef.current) {
+                                        reproducirSonido();
+                                    } else {
+                                        detenerAvisoPedido();
+                                    }
                                 }}
                                 title={sonidoActivo ? "Silenciar avisos" : "Activar avisos"}
                             >

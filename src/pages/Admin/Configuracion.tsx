@@ -21,7 +21,11 @@ import {
 } from "react-icons/fa";
 
 import { toastExito, toastError } from "../../utils/toast";
-import { reproducirSonidoPedido } from "../../utils/sonidoPedido";
+import {
+    detenerAvisoPedido,
+    hayAvisoActivo,
+    iniciarAvisoPedido,
+} from "../../utils/sonidoPedido";
 import {
     obtenerPerfil,
     actualizarPerfil,
@@ -586,8 +590,14 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
                             <button
                                 type="button"
                                 className="btn-cancelar"
-                                onClick={() => reproducirSonidoPedido()}
-                                title="Escuchar el aviso de pedido nuevo"
+                                onClick={() => {
+                                    if (hayAvisoActivo()) {
+                                        detenerAvisoPedido();
+                                    } else {
+                                        iniciarAvisoPedido(15, false);
+                                    }
+                                }}
+                                title="Escuchar el aviso de pedido nuevo (se detiene al tocar)"
                             >
                                 Probar sonido
                             </button>
