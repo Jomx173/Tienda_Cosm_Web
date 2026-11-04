@@ -553,15 +553,16 @@ function Admin() {
 
                                 {dropdownAbierto && (
                                     <div className="avatar-dropdown">
-                                        <a
-                                            href="/"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                        <button
+                                            type="button"
                                             className="dropdown-item"
-                                            onClick={() => setDropdownAbierto(false)}
+                                            onClick={() => {
+                                                setDropdownAbierto(false);
+                                                navegar("/");
+                                            }}
                                         >
                                             <FaExternalLinkAlt /> Ver tienda
-                                        </a>
+                                        </button>
                                         <button
                                             className="dropdown-item"
                                             onClick={() => {
