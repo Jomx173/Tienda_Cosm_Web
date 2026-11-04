@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 const ADMIN_PREFIX = "/admin";
 const LOGIN_ROUTE = "/login";
@@ -13,14 +13,14 @@ type BeforeInstallPromptEvent = Event & {
  * Integra la PWA del panel admin de MD:
  *  - Enlaza el manifest solo en /admin y /login (la tienda pública no lo ve).
  *  - Registra el service worker solo desde el admin.
- *  - En la app instalada (standalone) solo permite rutas del admin/login;
- *    cualquier otra ruta redirige a /admin/pedidos.
  *  - Muestra el botón "Instalar app" dentro del admin usando beforeinstallprompt,
  *    oculto cuando ya está instalada.
+ *
+ * No redirige las rutas de la tienda: así "Ver tienda" funciona también con la
+ * app instalada (antes saltaba de vuelta a /admin/pedidos).
  */
 export default function PwaInstall() {
     const { pathname } = useLocation();
-    const navigate = useNavigate();
 
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [installed, setInstalled] = useState(false);
@@ -31,7 +31,6 @@ export default function PwaInstall() {
 
     // 1. Enlaza el manifest solo en las rutas del admin y de login.
     // 2. Registra el service worker solo desde el admin.
-    // 3. App instalada + ruta fuera del admin/login -> redirige a /admin/pedidos.
     useEffect(() => {
         if (isAdmin || isLogin) {
             if (!document.querySelector('link[rel="manifest"]')) {
@@ -49,12 +48,8 @@ export default function PwaInstall() {
                     // El registro falló silenciosamente; la app sigue funcionando.
                 });
         }
-
-        if (isStandalone && !isAdmin && !isLogin) {
-            navigate("/admin/pedidos", { replace: true });
-        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pathname, isAdmin, isLogin, isStandalone, navigate]);
+    }, [isAdmin, isLogin]);
 
     // Captura el evento beforeinstallprompt para instalar bajo demanda.
     useEffect(() => {
