@@ -10,7 +10,7 @@ import {
 import type { Pedido } from "../../../services/types";
 import { toastExito, toastError } from "../../../utils/toast";
 import { formatearPrecio } from "../../../utils/precio";
-import site from "../../../config/site";
+import { enlaceWhatsAppPedido } from "../../../utils/mensajesPedido";
 
 const ESTADOS: Record<string, string> = {
     pendiente: "Pendiente",
@@ -41,58 +41,126 @@ const formatearFecha = (fecha: string) => {
     }
 };
 
-const mensajeWhatsAppPedido = (pedido: Pedido) => {
-    const lineas = (pedido.productos || [])
-        .map(
-            (item) =>
-                `• ${item.nombre} x${item.cantidad} — ${formatearPrecio(
-                    Number(item.precio) * Number(item.cantidad || 1)
-                )}`
-        )
-        .join("\n");
-
-    const nombreCliente = pedido.nombre_cliente ? `, ${pedido.nombre_cliente}` : "";
-    const direccion = pedido.direccion
-        ? `\n\n📦 Dirección de entrega: ${pedido.direccion}`
-        : "";
-
-    const mensajesPorEstado: Record<string, string> = {
-        pendiente:
-            `¡Hola${nombreCliente}! 👋 Gracias por tu pedido en ${site.nombre}.\n\n` +
-            `📋 N.º de pedido: ${numeroPedido(pedido)}\n` +
-            `Recibimos tu orden y está en proceso de confirmación.\n\n` +
-            `${lineas}\n\nTotal: ${formatearPrecio(pedido.total)}\n\n` +
-            `Pronto te escribimos para confirmar. ¡Gracias! 💜`,
-        confirmado:
-            `¡Hola${nombreCliente}! ✅ Tu pedido en ${site.nombre} fue CONFIRMADO.\n\n` +
-            `📋 N.º de pedido: ${numeroPedido(pedido)}\n` +
-            `${lineas}\n\nTotal: ${formatearPrecio(pedido.total)}${direccion}\n\n` +
-            `Te escribiremos para coordinar el envío. ¡Gracias! 💜`,
-        completado:
-            `¡Hola${nombreCliente}! 🎉 Tu pedido en ${site.nombre} fue ENTREGADO.\n\n` +
-            `📋 N.º de pedido: ${numeroPedido(pedido)}\n` +
-            `${lineas}\n\nTotal: ${formatearPrecio(pedido.total)}\n\n` +
-            `¡Gracias por tu compra! Te esperamos pronto. 💜`,
-        cancelado:
-            `¡Hola${nombreCliente}! Lamentamos informarte que tu pedido en ${site.nombre} fue cancelado.\n\n` +
-            `📋 N.º de pedido: ${numeroPedido(pedido)}\n` +
-            `${lineas}\n\nSi tienes dudas, escríbenos. ¡Gracias! 💜`,
-    };
-
-    return encodeURIComponent(
-        mensajesPorEstado[pedido.estado || ""] || mensajesPorEstado.pendiente
-    );
-};
+const escaparHtml = (texto: string) =>
+    String(texto)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
 
 function PedidosSection({ pedidos, onRecargar, onNoAutorizado }: Props) {
     const [busqueda, setBusqueda] = useState("");
     const [filtroEstado, setFiltroEstado] = useState("todos");
+
+    const abrirEnlace = (url: string) => {
+        window.open(url, "_blank", "noopener,noreferrer");
+    };
+
+    const ofrecerAvisoCliente = async (pedido: Pedido, nuevoEstado: string) => {
+        const enlace = enlaceWhatsAppPedido(
+            { ...pedido, estado: nuevoEstado },
+            nuevoEstado
+        );
+
+        if (!enlace) return;
+
+        const textos: Record<string, { titulo: string; mensaje: string }> = {
+            confirmado: {
+                titulo: "Pedido confirmado ✅",
+                mensaje: "¿Le enviamos la confirmación al cliente por WhatsApp?",
+            },
+            completado: {
+                titulo: "Pedido entregado 🎉",
+                mensaje: "¿Le enviamos el agradecimiento por su compra?",
+            },
+            cancelado: {
+                titulo: "Pedido cancelado",
+                mensaje: "¿Le avisamos al cliente por WhatsApp?",
+            },
+        };
+
+        const texto = textos[nuevoEstado];
+
+        if (!texto) return;
+
+        const resultado = await Swal.fire({
+            icon: nuevoEstado === "cancelado" ? "info" : "success",
+            title: texto.titulo,
+            text: texto.mensaje,
+            showCancelButton: true,
+            confirmButtonText: "Enviar WhatsApp",
+            cancelButtonText: "Ahora no",
+            confirmButtonColor: "#25D366",
+            cancelButtonColor: "#8d2033",
+        });
+
+        if (resultado.isConfirmed) abrirEnlace(enlace);
+    };
+
+    /**
+     * Recorre los pedidos pendientes uno por uno con el mensaje listo:
+     * "Enviar y siguiente" abre WhatsApp y pasa al siguiente; "Saltar" lo
+     * omite; la X cierra la cola.
+     */
+    const atenderPendientes = async () => {
+        const pendientes = pedidos
+            .filter((pedido) => (pedido.estado || "pendiente") === "pendiente")
+            .sort((a, b) => Number(a.id_pedido) - Number(b.id_pedido));
+
+        if (pendientes.length === 0) {
+            await Swal.fire({
+                icon: "info",
+                title: "Sin pedidos pendientes",
+                text: "Todos los pedidos están atendidos.",
+            });
+            return;
+        }
+
+        for (let indice = 0; indice < pendientes.length; indice++) {
+            const pedido = pendientes[indice];
+            const enlace = enlaceWhatsAppPedido(pedido, "pendiente");
+            const restantes = pendientes.length - indice;
+
+            const resultado = await Swal.fire({
+                title: `Pedido ${numeroPedido(pedido)}`,
+                html:
+                    `<div style="text-align:left;font-size:14px;line-height:1.7">` +
+                    `<strong>${escaparHtml(pedido.nombre_cliente || "Cliente")}</strong><br>` +
+                    `📞 ${escaparHtml(pedido.telefono_cliente || "sin teléfono")}<br>` +
+                    `🛒 ${(pedido.productos || []).length} producto(s) · <strong>${formatearPrecio(pedido.total)}</strong><br>` +
+                    `<span style="color:#8a7f81">Quedan ${restantes} pendiente(s)</span>` +
+                    `</div>`,
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonText: enlace ? "Enviar y siguiente" : "Siguiente",
+                cancelButtonText: "Saltar",
+                denyButtonText: "Cerrar",
+                confirmButtonColor: "#25D366",
+                cancelButtonColor: "#8d2033",
+                denyButtonColor: "#6b6b6b",
+            });
+
+            if (resultado.isDenied || resultado.isDismissed) break;
+
+            if (resultado.isConfirmed && enlace) {
+                abrirEnlace(enlace);
+            }
+        }
+    };
+
+    const pendientesCount = pedidos.filter(
+        (pedido) => (pedido.estado || "pendiente") === "pendiente"
+    ).length;
 
     const handleCambiarEstado = async (pedido: Pedido, nuevoEstado: string) => {
         try {
             await actualizarEstadoPedido(pedido.id_pedido, nuevoEstado);
             toastExito("Estado del pedido actualizado");
             await onRecargar();
+
+            if (["confirmado", "completado", "cancelado"].includes(nuevoEstado)) {
+                await ofrecerAvisoCliente(pedido, nuevoEstado);
+            }
         } catch (err) {
             onNoAutorizado(err);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -190,6 +258,18 @@ function PedidosSection({ pedidos, onRecargar, onNoAutorizado }: Props) {
                                     </option>
                                 ))}
                             </select>
+
+                            {pendientesCount > 0 && (
+                                <button
+                                    type="button"
+                                    className="btn-atender"
+                                    onClick={atenderPendientes}
+                                    title="Recorrer los pedidos pendientes y avisar a cada cliente"
+                                >
+                                    <FaWhatsapp />
+                                    Atender pendientes ({pendientesCount})
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -257,7 +337,7 @@ function PedidosSection({ pedidos, onRecargar, onNoAutorizado }: Props) {
                                             <td className="acciones">
                                                 {pedido.telefono_cliente && (
                                                     <a
-                                                        href={`https://wa.me/${pedido.telefono_cliente.replace(/\D/g, "")}?text=${mensajeWhatsAppPedido(pedido)}`}
+                                                        href={enlaceWhatsAppPedido(pedido) || "#"}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         title={`Avisar al cliente: pedido ${ESTADOS[pedido.estado || ""] || pedido.estado}`}

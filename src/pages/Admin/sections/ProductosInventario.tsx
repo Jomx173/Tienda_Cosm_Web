@@ -510,15 +510,7 @@ function ProductosInventario({
                                     </td>
                                     <td>
                                         {item.tono ? (
-                                            <span className="inv-tono">
-                                                {item.color && (
-                                                    <span
-                                                        className="inv-tono-punto"
-                                                        style={{ background: item.color }}
-                                                    />
-                                                )}
-                                                {item.tono}
-                                            </span>
+                                            <span className="inv-tono">{item.tono}</span>
                                         ) : (
                                             <span className="sin-imagen">—</span>
                                         )}

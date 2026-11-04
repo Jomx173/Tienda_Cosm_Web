@@ -2,12 +2,78 @@
    CONFIGURACIÓN
    ========================= */
 
+.configuracion-tabs{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+
+    margin-bottom:22px;
+    padding:6px;
+
+    background:#fff;
+    border:1px solid #efe1d7;
+    border-radius:14px;
+
+    box-shadow:0 6px 18px rgba(112,21,34,.05);
+}
+
+.configuracion-tab{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+
+    flex:1 1 auto;
+
+    padding:11px 16px;
+
+    border-radius:10px;
+
+    background:transparent;
+    color:#7d6a6e;
+
+    font-size:14px;
+    font-weight:600;
+
+    transition:.2s;
+}
+
+.configuracion-tab:hover{
+    background:#f7ebec;
+    color:var(--primary);
+}
+
+.configuracion-tab.activa{
+    background:var(--primary);
+    color:#fff;
+
+    box-shadow:0 4px 12px rgba(107,20,32,.22);
+}
+
 .configuracion-grid{
     display:grid;
-    grid-template-columns:1fr 1fr;
+    grid-template-columns:1fr;
     gap:24px;
 
     align-items:start;
+}
+
+.configuracion-grid > [hidden]{
+    display:none !important;
+}
+
+@media(max-width:620px){
+    .configuracion-tabs{
+        gap:5px;
+        padding:5px;
+        margin-bottom:16px;
+    }
+
+    .configuracion-tab{
+        flex:1 1 44%;
+        padding:10px;
+        font-size:13px;
+    }
 }
 
 .configuracion-ayuda{
@@ -78,7 +144,7 @@
    ========================= */
 
 .configuracion-card--ancho{
-    margin-top:24px;
+    margin-top:0;
 }
 
 .respaldo-panel{

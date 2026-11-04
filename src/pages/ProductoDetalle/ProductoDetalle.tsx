@@ -11,13 +11,10 @@ import { Action as ActionCarrito } from "../../store/slices/Carrito";
 import Navbar from "../../components/Navbar/Navbar";
 import ProductoCard from "../../components/ProductoCard/ProductoCard";
 import site from "../../config/site";
-import { toastExito } from "../../utils/toast";
+import { animarCarrito } from "../../utils/animacionCarrito";
 import { formatearPrecio } from "../../utils/precio";
 
 import "./ProductoDetalle.css";
-
-/** Color vino de MD Beauty por defecto cuando una variante no tiene color */
-const COLOR_TONO_POR_DEFECTO = "#701522";
 
 // Una variante solo es comprable si existe, está activa y tiene stock confirmado.
 // Nunca tratamos null/undefined como disponible.
@@ -261,11 +258,9 @@ function ProductoDetalle() {
         );
 
         setAgregado(true);
-        toastExito(
-            varianteActual
-                ? `${producto.nombre} (${varianteActual.tono}) se agregó al carrito`
-                : `${producto.nombre} se agregó al carrito`
-        );
+
+        // En vez de un aviso emergente, el carrito vuela al ícono del navbar.
+        animarCarrito(document.querySelector<HTMLButtonElement>(".detalle-agregar"));
 
         setTimeout(() => setAgregado(false), 1500);
     };
@@ -392,16 +387,7 @@ function ProductoDetalle() {
                                                         ? v.tono
                                                         : `${v.tono} (agotado)`
                                                 }
-                                                style={
-                                                    v.color
-                                                        ? { borderColor: v.color }
-                                                        : undefined
-                                                }
                                             >
-                                                <span
-                                                    className="detalle-tono-color"
-                                                    style={{ background: v.color || COLOR_TONO_POR_DEFECTO }}
-                                                />
                                                 <span className="detalle-tono-nombre">{v.tono}</span>
                                                 {!disponible && (
                                                     <span className="detalle-tono-agotado">
@@ -414,13 +400,6 @@ function ProductoDetalle() {
                                 </div>
                             </div>
                         )}
-
-                        <div className="detalle-stock">
-                            <FaCheckCircle />
-                            {hayDisponible
-                                ? `Disponible${tieneVariantes ? ` (${stockDisponible} en este tono)` : ""}`
-                                : "Por consultar disponibilidad"}
-                        </div>
 
                         <div className="detalle-comprar">
                             <div className="detalle-cantidad">

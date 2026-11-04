@@ -18,6 +18,7 @@ import {
     FaDollarSign,
     FaSpinner,
     FaBell,
+    FaUser,
 } from "react-icons/fa";
 
 import { toastExito, toastError } from "../../utils/toast";
@@ -48,6 +49,15 @@ import type { PlanRestauracion, ValidacionRespaldo } from "../../services/types"
 
 import "./Configuracion.css";
 import { usePushNotifications } from "../../components/PushNotifications/usePushNotifications";
+
+const PESTANAS = [
+    { id: "perfil", etiqueta: "Perfil", Icono: FaUser },
+    { id: "seguridad", etiqueta: "Contraseña", Icono: FaLock },
+    { id: "notificaciones", etiqueta: "Notificaciones", Icono: FaBell },
+    { id: "respaldos", etiqueta: "Respaldos", Icono: FaDatabase },
+] as const;
+
+type PestanaConfig = (typeof PESTANAS)[number]["id"];
 
 const FORMATO_IDENTIDAD = /^\d{4}-\d{4}-\d{5}$/;
 
@@ -84,6 +94,8 @@ type Props = {
 };
 
 function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestaurado }: Props) {
+    const [pestana, setPestana] = useState<PestanaConfig>("perfil");
+
     const [cargandoPerfil, setCargandoPerfil] = useState(true);
 
     const [datosUsuario, setDatosUsuario] = useState({
@@ -477,8 +489,35 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
 
     return (
         <div className="configuracion">
+            <div
+                className="configuracion-tabs"
+                role="tablist"
+                aria-label="Secciones de configuración"
+            >
+                {PESTANAS.map(({ id, etiqueta, Icono }) => (
+                    <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={pestana === id}
+                        className={
+                            pestana === id
+                                ? "configuracion-tab activa"
+                                : "configuracion-tab"
+                        }
+                        onClick={() => setPestana(id)}
+                    >
+                        <Icono />
+                        {etiqueta}
+                    </button>
+                ))}
+            </div>
+
             <div className="configuracion-grid">
-                <section className="configuracion-card">
+                <section
+                    className="configuracion-card"
+                    hidden={pestana !== "perfil"}
+                >
                     <h4>Datos de usuario</h4>
 
                     <form className="admin-form" onSubmit={handleGuardarUsuario}>
@@ -524,7 +563,10 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
                     </form>
                 </section>
 
-                <section className="configuracion-card">
+                <section
+                    className="configuracion-card"
+                    hidden={pestana !== "seguridad"}
+                >
                     <h4>Cambiar contraseña</h4>
 
                     <form className="admin-form" onSubmit={handleGuardarPassword}>
@@ -551,7 +593,10 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
                 {/* =======================
                     NOTIFICACIONES DE PEDIDOS
                 ======================= */}
-                <section className="configuracion-card configuracion-card--notificaciones">
+                <section
+                    className="configuracion-card configuracion-card--notificaciones"
+                    hidden={pestana !== "notificaciones"}
+                >
                     <header className="notificaciones-cabecera">
                         <span className="notificaciones-icono">
                             <FaBell />
@@ -703,7 +748,10 @@ function Configuracion({ onPerfilActualizado, onCerrarSesion, onInventarioRestau
                 {/* =======================
                     COPIAS DE SEGURIDAD
                 ======================= */}
-            <section className="configuracion-card configuracion-card--ancho respaldo-panel">
+            <section
+                className="configuracion-card configuracion-card--ancho respaldo-panel"
+                hidden={pestana !== "respaldos"}
+            >
                 <header className="respaldo-panel-cabecera">
                     <span className="respaldo-panel-icono">
                         <FaDatabase />

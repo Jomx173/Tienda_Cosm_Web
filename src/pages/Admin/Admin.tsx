@@ -160,8 +160,10 @@ function Admin() {
     const [menuAbierto, setMenuAbierto] = useState(false);
     const [esMovil, setEsMovil] = useState(() => window.innerWidth <= 992);
     const [dropdownAbierto, setDropdownAbierto] = useState(false);
+    const [notificacionesAbierto, setNotificacionesAbierto] = useState(false);
     const adminRef = useRef<HTMLDivElement>(null);
     const avatarRef = useRef<HTMLDivElement>(null);
+    const notificacionesRef = useRef<HTMLDivElement>(null);
     const [perfilVersion, setPerfilVersion] = useState(0);
 
     useEffect(() => {
@@ -205,37 +207,38 @@ function Admin() {
     const sidebarRevelado = esMovil ? menuAbierto : !sidebarColapsada;
 
     useEffect(() => {
-        const cerrar = (e: MouseEvent) => {
-            if (adminRef.current && !adminRef.current.contains(e.target as Node)) {
+        const cerrar = (evento: MouseEvent) => {
+            const objetivo = evento.target as Node;
+
+            if (
+                notificacionesRef.current &&
+                !notificacionesRef.current.contains(objetivo)
+            ) {
+                setNotificacionesAbierto(false);
+            }
+
+            if (avatarRef.current && !avatarRef.current.contains(objetivo)) {
                 setDropdownAbierto(false);
+            }
+
+            if (adminRef.current && !adminRef.current.contains(objetivo)) {
                 setMenuAbierto(false);
             }
         };
 
-        document.addEventListener("click", cerrar);
-
-        return () => document.removeEventListener("click", cerrar);
-    }, []);
-
-    useEffect(() => {
-        const cerrar = (e: MouseEvent) => {
-            if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) {
-                setDropdownAbierto(false);
-            }
-        };
-
-        const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
+        const alPresionarTecla = (evento: KeyboardEvent) => {
+            if (evento.key === "Escape") {
+                setNotificacionesAbierto(false);
                 setDropdownAbierto(false);
             }
         };
 
         document.addEventListener("click", cerrar);
-        document.addEventListener("keydown", onKey);
+        document.addEventListener("keydown", alPresionarTecla);
 
         return () => {
             document.removeEventListener("click", cerrar);
-            document.removeEventListener("keydown", onKey);
+            document.removeEventListener("keydown", alPresionarTecla);
         };
     }, []);
 
@@ -442,19 +445,81 @@ function Admin() {
                             <h2>{TITULOS_SECCION[pestana] || "Dashboard"}</h2>
                         </div>
 
-                        <div className="topbar-der" ref={avatarRef}>
-                            <button
-                                className="topbar-icono topbar-bell"
-                                onClick={() => setDropdownAbierto(!dropdownAbierto)}
-                                title="Notificaciones"
+                        <div className="topbar-der">
+                            <div
+                                className="topbar-notificaciones"
+                                ref={notificacionesRef}
                             >
-                                <FaBell />
-                                {pedidosPendientes.length > 0 && (
-                                    <span className="topbar-badge">
-                                        {pedidosPendientes.length}
-                                    </span>
+                                <button
+                                    className="topbar-icono topbar-bell"
+                                    onClick={() => {
+                                        setNotificacionesAbierto((abierto) => !abierto);
+                                        setDropdownAbierto(false);
+                                    }}
+                                    title="Pedidos pendientes"
+                                    aria-expanded={notificacionesAbierto}
+                                >
+                                    <FaBell />
+                                    {pedidosPendientes.length > 0 && (
+                                        <span className="topbar-badge">
+                                            {pedidosPendientes.length}
+                                        </span>
+                                    )}
+                                </button>
+
+                                {notificacionesAbierto && (
+                                    <div className="notificaciones-dropdown">
+                                        <div className="notificaciones-dropdown-cabecera">
+                                            <strong>Pedidos pendientes</strong>
+                                            <span>{pedidosPendientes.length}</span>
+                                        </div>
+
+                                        {pedidosPendientes.length === 0 ? (
+                                            <p className="notificaciones-vacio">
+                                                No hay pedidos pendientes.
+                                            </p>
+                                        ) : (
+                                            <ul className="notificaciones-lista">
+                                                {pedidosPendientes
+                                                    .slice(0, 6)
+                                                    .map((pedido) => (
+                                                        <li key={pedido.id_pedido}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setNotificacionesAbierto(false);
+                                                                    navegar("/admin/pedidos");
+                                                                }}
+                                                            >
+                                                                <span className="notificaciones-pedido">
+                                                                    #{pedido.id_pedido}
+                                                                </span>
+                                                                <span className="notificaciones-cliente">
+                                                                    {pedido.nombre_cliente || "Cliente"}
+                                                                </span>
+                                                                <span className="notificaciones-total">
+                                                                    {formatearPrecio(pedido.total)}
+                                                                </span>
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                            </ul>
+                                        )}
+
+                                        <button
+                                            type="button"
+                                            className="notificaciones-ver"
+                                            onClick={() => {
+                                                setNotificacionesAbierto(false);
+                                                navegar("/admin/pedidos");
+                                            }}
+                                        >
+                                            Ver todos los pedidos
+                                        </button>
+                                    </div>
                                 )}
-                            </button>
+                            </div>
+
                             <button
                                 className="btn-sonido"
                                 onClick={() => {
@@ -471,10 +536,13 @@ function Admin() {
                                 {sonidoActivo ? <FaVolumeUp /> : <FaVolumeMute />}
                             </button>
 
-                            <div className="topbar-avatar">
+                            <div className="topbar-avatar" ref={avatarRef}>
                                 <button
                                     className="avatar-btn"
-                                    onClick={() => setDropdownAbierto(!dropdownAbierto)}
+                                    onClick={() => {
+                                        setDropdownAbierto((abierto) => !abierto);
+                                        setNotificacionesAbierto(false);
+                                    }}
                                 >
                                     <span className="avatar-inicial">
                                         {(admin?.nombre || "Admin").charAt(0).toUpperCase()}

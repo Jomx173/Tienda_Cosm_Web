@@ -1,0 +1,93 @@
+/* ============================================================================
+   Ajustes finos para teléfonos
+   Se importa al final para afinar tamaños en pantallas estrechas sin tocar
+   los estilos de escritorio.
+   ========================================================================== */
+
+html{
+    -webkit-text-size-adjust:100%;
+    text-size-adjust:100%;
+}
+
+body{
+    /* Evita el desplazamiento horizontal accidental en móvil sin romper el
+       navbar sticky (clip no crea un contenedor de scroll). */
+    overflow-x:clip;
+}
+
+@media(max-width:480px){
+    /* iOS hace zoom al enfocar un campo con letra menor de 16 px. */
+    input,
+    select,
+    textarea{
+        font-size:16px;
+    }
+
+    .producto-info{
+        padding:16px;
+    }
+
+    .producto-info h3{
+        font-size:18px;
+    }
+
+    .producto-desc{
+        font-size:14px;
+        line-height:21px;
+    }
+
+    .precio-actual{
+        font-size:23px;
+    }
+
+    .detalle{
+        padding-top:16px;
+    }
+
+    .detalle-pregunta{
+        padding:16px 14px;
+        font-size:14px;
+    }
+
+    .detalle-info{
+        padding:18px 16px 0;
+    }
+
+    .detalle-precio-nombre{
+        font-size:19px;
+    }
+
+    .detalle-info .precio-actual{
+        font-size:24px;
+    }
+
+    .admin-main{
+        padding:20px 14px 50px;
+    }
+}
+
+@media(max-width:360px){
+    .producto-info{
+        padding:14px;
+    }
+
+    .producto-info h3{
+        font-size:17px;
+    }
+
+    .precio-actual{
+        font-size:21px;
+    }
+
+    .detalle-precio-nombre{
+        font-size:18px;
+    }
+
+    .detalle-info .precio-actual{
+        font-size:22px;
+    }
+
+    .detalle-agregar{
+        font-size:15px;
+    }
+}

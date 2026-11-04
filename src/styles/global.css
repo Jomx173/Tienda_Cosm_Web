@@ -212,31 +212,11 @@ section{
 
     display:grid;
 
-    grid-template-columns:repeat(4,1fr);
+    grid-template-columns:repeat(auto-fill, minmax(min(250px, 100%), 1fr));
 
-    gap:30px;
+    gap:clamp(16px, 2vw, 30px);
 
     align-items:stretch;
-
-}
-
-@media(max-width:992px){
-
-    .products-grid{
-
-        grid-template-columns:repeat(2,1fr);
-
-    }
-
-}
-
-@media(max-width:600px){
-
-    .products-grid{
-
-        grid-template-columns:1fr;
-
-    }
 
 }
 
@@ -271,4 +251,41 @@ section{
 
     color:#fff;
 
+}
+
+/* ===========================
+   ANIMACIÓN: AGREGAR AL CARRITO
+=========================== */
+
+.carrito-animacion{
+    position:fixed;
+
+    width:44px;
+    height:44px;
+
+    color:var(--primary);
+
+    z-index:3000;
+
+    pointer-events:none;
+
+    filter:drop-shadow(0 6px 12px rgba(107,20,32,.35));
+
+    will-change:transform,opacity;
+}
+
+.carrito-animacion svg{
+    width:100%;
+    height:100%;
+    display:block;
+}
+
+.navbar-cart--salto{
+    animation:carrito-salto .55s ease;
+}
+
+@keyframes carrito-salto{
+    0%,100%{ transform:scale(1); }
+    35%{ transform:scale(1.25) rotate(-6deg); }
+    65%{ transform:scale(.95) rotate(4deg); }
 }

@@ -1016,17 +1016,6 @@ function ProductosSection({
                                             </label>
 
                                             <label>
-                                                Color
-                                                <input
-                                                    type="color"
-                                                    value={v.color || "#cccccc"}
-                                                    onChange={(e) =>
-                                                        cambiarVarianteForm(i, "color", e.target.value)
-                                                    }
-                                                />
-                                            </label>
-
-                                            <label>
                                                 Precio (L) *
                                                 <input
                                                     type="number"

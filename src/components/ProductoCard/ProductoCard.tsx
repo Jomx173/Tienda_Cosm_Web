@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { FaWhatsapp, FaCartPlus, FaCheck } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { rutaImagen } from "../../services/api";
 import type { Producto } from "../../services/types";
@@ -8,6 +8,7 @@ import { useDispatch } from "../../store";
 import { Action as ActionCarrito } from "../../store/slices/Carrito";
 import site from "../../config/site";
 import { formatearPrecio } from "../../utils/precio";
+import { animarCarrito } from "../../utils/animacionCarrito";
 
 import "./ProductoCard.css";
 
@@ -20,6 +21,7 @@ function ProductoCard({ producto, soloLectura = false }: Props) {
     const { nombre, categoria, descripcion, precio, imagen } = producto;
 
     const dispatch = useDispatch();
+    const navegar = useNavigate();
 
     const [agregado, setAgregado] = useState(false);
 
@@ -39,6 +41,10 @@ function ProductoCard({ producto, soloLectura = false }: Props) {
 
     const tieneVariantes = (producto.variantes ?? []).length > 0;
 
+    // Toda la tarjeta abre el producto; los botones de dentro no.
+    const irAlProducto = () => navegar(enlaceDetalle);
+    const detener = (evento: MouseEvent) => evento.stopPropagation();
+
     const agregarAlCarrito = () => {
         dispatch(
             ActionCarrito.agregar({
@@ -52,8 +58,8 @@ function ProductoCard({ producto, soloLectura = false }: Props) {
     };
 
     return (
-        <div className="producto-card">
-            <Link to={enlaceDetalle} className="producto-img">
+        <div className="producto-card" onClick={irAlProducto}>
+            <Link to={enlaceDetalle} className="producto-img" onClick={detener}>
                 {imagen ? (
                     <img src={rutaImagen(imagen)} alt={nombre} loading="lazy" />
                 ) : (
@@ -77,7 +83,7 @@ function ProductoCard({ producto, soloLectura = false }: Props) {
                     </span>
                 )}
 
-                <Link to={enlaceDetalle} className="producto-nombre">
+                <Link to={enlaceDetalle} className="producto-nombre" onClick={detener}>
                     <h3>{nombre}</h3>
                 </Link>
 
@@ -93,15 +99,20 @@ function ProductoCard({ producto, soloLectura = false }: Props) {
                         {tieneVariantes ? (
                             <Link
                                 to={enlaceDetalle}
-                                className="btn-agregar-carrito"
+                                className="btn-agregar-carrito btn-ver-tonos"
+                                onClick={detener}
                             >
-                                <FaCartPlus /> Ver tonos disponibles
+                                <FaCartPlus /> Agregar al carrito
                             </Link>
                         ) : (
                             <button
                                 type="button"
                                 className={agregado ? "btn-agregar-carrito agregado" : "btn-agregar-carrito"}
-                                onClick={agregarAlCarrito}
+                                onClick={(evento) => {
+                                    evento.stopPropagation();
+                                    animarCarrito(evento.currentTarget);
+                                    agregarAlCarrito();
+                                }}
                             >
                                 {agregado ? (
                                     <>
@@ -115,8 +126,15 @@ function ProductoCard({ producto, soloLectura = false }: Props) {
                             </button>
                         )}
 
-                        <a href={site.whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-preguntar">
-                            <FaWhatsapp /> Preguntar por este producto
+                        <a
+                            href={site.whatsappUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-preguntar"
+                            title="Preguntar por este producto por WhatsApp"
+                            onClick={detener}
+                        >
+                            <FaWhatsapp /> Preguntar por WhatsApp
                         </a>
 
                         <p className="producto-retiro">
