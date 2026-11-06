@@ -439,3 +439,82 @@
         flex-wrap:wrap;
     }
 }
+
+/* =========================
+   ESCRITORIO
+========================= */
+
+@media(min-width:992px){
+    .products .section-header{
+        max-width:520px;
+
+        margin:0 auto 18px;
+    }
+
+    .products .section-header .section-eyebrow{
+        margin-bottom:6px;
+    }
+
+    .products .section-header h2{
+        font-size:32px;
+
+        margin-bottom:6px;
+    }
+
+    .products .section-header p{
+        font-size:15px;
+        line-height:22px;
+    }
+
+    .products-breadcrumb{
+        margin-bottom:14px;
+    }
+
+    .products-layout{
+        gap:16px;
+
+        max-width:1400px;
+    }
+
+    .products-sidebar{
+        width:100%;
+        max-width:1080px;
+
+        margin:0 auto;
+
+        padding:10px 14px;
+    }
+
+    .products-sidebar > .sidebar-titulo{
+        margin-bottom:8px;
+    }
+
+    .categorias-scroll{
+        gap:6px;
+
+        padding:0 0 4px;
+    }
+
+    .categorias-scroll .sidebar-item{
+        padding:7px 13px;
+    }
+
+    .sidebar-subcategorias{
+        margin-top:8px;
+
+        padding:8px;
+    }
+
+    .sidebar-filtros{
+        gap:10px;
+
+        margin-top:8px;
+        padding-top:8px;
+    }
+
+    .products-titulo{
+        margin:0 0 12px;
+
+        font-size:22px;
+    }
+}
