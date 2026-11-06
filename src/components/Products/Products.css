@@ -518,3 +518,10 @@
         font-size:22px;
     }
 }
+
+/* Cuatro tarjetas por fila en escritorio */
+@media(min-width:992px){
+    .products-content .products-grid{
+        grid-template-columns:repeat(4, minmax(0, 1fr));
+    }
+}
