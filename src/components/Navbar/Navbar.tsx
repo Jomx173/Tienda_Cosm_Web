@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { FaChevronDown, FaShoppingCart } from "react-icons/fa";
 
@@ -19,6 +19,7 @@ function Navbar() {
     const [scrolled, setScrolled] = useState(false);
 
     const masRef = useRef<HTMLDivElement>(null);
+    const ubicacion = useLocation();
 
     const cantidadCarrito = useSelector(SelectorCarrito.getCantidadTotal);
 
@@ -47,16 +48,25 @@ function Navbar() {
     }, []);
 
     useEffect(() => {
-        const cerrar = (e: MouseEvent) => {
+        const cerrar = (e: MouseEvent | TouchEvent) => {
             if (masRef.current && !masRef.current.contains(e.target as Node)) {
                 setMasAbierto(false);
             }
         };
 
-        document.addEventListener("click", cerrar);
+        document.addEventListener("mousedown", cerrar);
+        document.addEventListener("touchstart", cerrar);
 
-        return () => document.removeEventListener("click", cerrar);
+        return () => {
+            document.removeEventListener("mousedown", cerrar);
+            document.removeEventListener("touchstart", cerrar);
+        };
     }, []);
+
+    // Al cambiar de página el menú se cierra siempre.
+    useEffect(() => {
+        setMasAbierto(false);
+    }, [ubicacion.pathname]);
 
     const maxVisibles = viewport > 992 ? categorias.length : viewport > 576 ? 3 : 0;
     const visibles = categorias.slice(0, maxVisibles);

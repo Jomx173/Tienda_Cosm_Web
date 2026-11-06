@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { FaChevronRight, FaHome } from "react-icons/fa";
@@ -33,6 +33,9 @@ function Products({ categoria }: Props) {
     const [soloOferta, setSoloOferta] = useState(false);
     const [visibles, setVisibles] = useState(POR_PAGINA);
     const [subcategoria, setSubcategoria] = useState<string | null>(null);
+    const [subcategoriasAbiertas, setSubcategoriasAbiertas] = useState(false);
+
+    const sidebarRef = useRef<HTMLElement>(null);
 
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -49,6 +52,34 @@ function Products({ categoria }: Props) {
             .catch(() => {});
     }, []);
 
+    // Cierra el panel de subcategorías al tocar fuera o con Escape.
+    useEffect(() => {
+        const cerrar = (evento: MouseEvent | TouchEvent) => {
+            if (
+                sidebarRef.current &&
+                !sidebarRef.current.contains(evento.target as Node)
+            ) {
+                setSubcategoriasAbiertas(false);
+            }
+        };
+
+        const alPresionarTecla = (evento: KeyboardEvent) => {
+            if (evento.key === "Escape") {
+                setSubcategoriasAbiertas(false);
+            }
+        };
+
+        document.addEventListener("mousedown", cerrar);
+        document.addEventListener("touchstart", cerrar);
+        document.addEventListener("keydown", alPresionarTecla);
+
+        return () => {
+            document.removeEventListener("mousedown", cerrar);
+            document.removeEventListener("touchstart", cerrar);
+            document.removeEventListener("keydown", alPresionarTecla);
+        };
+    }, []);
+
     const subcategoriasDeCategoria = (nombre: string) => {
         const lista = productos
             .filter((p) => nombreCategoria(p) === nombre)
@@ -61,6 +92,8 @@ function Products({ categoria }: Props) {
     const seleccionarSubcategoria = (sub: string | null) => {
         setSubcategoria(sub);
         setVisibles(POR_PAGINA);
+        // Al elegir una subcategoría el panel se cierra por completo.
+        setSubcategoriasAbiertas(false);
     };
 
     const texto = busqueda.trim().toLowerCase();
@@ -164,55 +197,63 @@ function Products({ categoria }: Props) {
             />
 
             <div className="products-layout">
-                <aside className="products-sidebar">
+                <aside className="products-sidebar" ref={sidebarRef}>
                     <h4 className="sidebar-titulo">Categorías</h4>
 
-                    <Link
-                        to="/productos"
-                        className={activa === "Todos" ? "sidebar-item activo" : "sidebar-item"}
-                    >
-                        Todos
-                    </Link>
+                    <div className="categorias-scroll">
+                        <Link
+                            to="/productos"
+                            className={activa === "Todos" ? "sidebar-item activo" : "sidebar-item"}
+                            onClick={() => setSubcategoriasAbiertas(false)}
+                        >
+                            Todos
+                        </Link>
 
-                    {categorias.map((c) => {
-                        const nombre = c.nombre;
-                        const esActiva = activa === nombre;
+                        {categorias.map((c) => {
+                            const nombre = c.nombre;
+                            const esActiva = activa === nombre;
 
-                        return (
-                            <div className="sidebar-grupo" key={c.id_categoria}>
-                                <Link
-                                    to={`/categoria/${slugify(nombre)}`}
-                                    className={esActiva ? "sidebar-item activo" : "sidebar-item"}
+                            return (
+                                <div className="sidebar-grupo" key={c.id_categoria}>
+                                    <Link
+                                        to={`/categoria/${slugify(nombre)}`}
+                                        className={esActiva ? "sidebar-item activo" : "sidebar-item"}
+                                        onClick={() => setSubcategoriasAbiertas(true)}
+                                    >
+                                        {nombre}
+                                        <span className="sidebar-flecha">
+                                            {esActiva && subcategoriasVisibles.length > 0
+                                                ? "▾"
+                                                : "▸"}
+                                        </span>
+                                    </Link>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {activa !== "Todos" &&
+                        subcategoriasAbiertas &&
+                        subcategoriasVisibles.length > 0 && (
+                            <div className="sidebar-subcategorias">
+                                <button
+                                    className={!subcategoria ? "sidebar-sub activo" : "sidebar-sub"}
+                                    onClick={() => seleccionarSubcategoria(null)}
                                 >
-                                    {nombre}
-                                    <span className="sidebar-flecha">
-                                        {esActiva && subcategoriasVisibles.length > 0 ? "▾" : "▸"}
-                                    </span>
-                                </Link>
+                                    Todas
+                                </button>
 
-                                {esActiva && subcategoriasVisibles.length > 0 && (
-                                    <div className="sidebar-subcategorias">
-                                        <button
-                                            className={!subcategoria ? "sidebar-sub activo" : "sidebar-sub"}
-                                            onClick={() => seleccionarSubcategoria(null)}
-                                        >
-                                            Todas
-                                        </button>
-
-                                        {subcategoriasVisibles.map((sub) => (
-                                            <button
-                                                key={sub}
-                                                className={subcategoria === sub ? "sidebar-sub activo" : "sidebar-sub"}
-                                                onClick={() => seleccionarSubcategoria(sub)}
-                                            >
-                                                {sub}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
+                                {subcategoriasVisibles.map((sub) => (
+                                    <button
+                                        key={sub}
+                                        className={subcategoria === sub ? "sidebar-sub activo" : "sidebar-sub"}
+                                        onClick={() => seleccionarSubcategoria(sub)}
+                                    >
+                                        {sub}
+                                    </button>
+                                ))}
                             </div>
-                        );
-                    })}
+                        )}
 
                     <div className="sidebar-filtros">
                         <h4 className="sidebar-titulo">Ofertas</h4>
