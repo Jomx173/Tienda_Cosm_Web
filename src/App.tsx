@@ -5,6 +5,7 @@ import Login from "./pages/Login/Login";
 import Admin from "./pages/Admin/Admin";
 import ProductoDetalle from "./pages/ProductoDetalle/ProductoDetalle";
 import Carrito from "./pages/Carrito/Carrito";
+import PedidoConfirmado from "./pages/PedidoConfirmado/PedidoConfirmado";
 import Productos from "./pages/Productos/Productos";
 import Categoria from "./pages/Categoria/Categoria";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
@@ -22,6 +23,7 @@ function App() {
                 <Route path="/categoria/:slug" element={<Categoria />} />
                 <Route path="/producto/:id" element={<ProductoDetalle />} />
                 <Route path="/carrito" element={<Carrito />} />
+                <Route path="/pedido-confirmado" element={<PedidoConfirmado />} />
                 <Route path="/login" element={<Login />} />
 
                 <Route

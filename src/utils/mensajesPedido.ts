@@ -102,3 +102,33 @@ export const enlaceWhatsAppPedido = (
         mensajePedido(pedido, estado)
     )}`;
 };
+
+/**
+ * Resumen que el cliente envía a la tienda al terminar su compra.
+ */
+export const mensajeConfirmacionPedido = (pedido: Pedido): string => {
+    const detalle = (pedido.productos || [])
+        .map((item) => {
+            const cantidad = Number(item.cantidad || 1);
+            const subtotal = Number(item.precio) * cantidad;
+            const tono = item.tono ? ` (Tono: ${item.tono})` : " (Tono: No aplica)";
+
+            return `- ${item.nombre}${tono} x${cantidad} - ${formatearPrecio(subtotal)}`;
+        })
+        .join("\n");
+
+    return (
+        `¡Hola! Acabo de hacer el pedido #${pedido.id_pedido} en la web.\n` +
+        `Detalle:\n${detalle}\n\n` +
+        `Total: ${formatearPrecio(pedido.total)}\n\n` +
+        `Quedo a la espera de su confirmación.`
+    );
+};
+
+/**
+ * Enlace directo al WhatsApp de la tienda con el resumen del pedido.
+ */
+export const enlaceWhatsAppTienda = (pedido: Pedido): string =>
+    `${site.whatsappUrl}?text=${encodeURIComponent(
+        mensajeConfirmacionPedido(pedido)
+    )}`;

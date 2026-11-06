@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-import { FaArrowLeft, FaMinus, FaPlus, FaTrash, FaCheckCircle, FaMapMarkerAlt } from "react-icons/fa";
+import { FaArrowLeft, FaMinus, FaPlus, FaTrash, FaMapMarkerAlt } from "react-icons/fa";
 
 import TopBar from "../../components/TopBar/TopBar";
 import Navbar from "../../components/Navbar/Navbar";
@@ -19,6 +19,7 @@ import "./Carrito.css";
 
 function Carrito() {
     const dispatch = useDispatch();
+    const navegar = useNavigate();
     const items = useSelector(SelectorCarrito.getItems);
     const total = useSelector(SelectorCarrito.getTotal);
     const cantidadTotal = useSelector(SelectorCarrito.getCantidadTotal);
@@ -27,7 +28,6 @@ function Carrito() {
     const [telefono, setTelefono] = useState("");
     const [direccion, setDireccion] = useState("");
     const [enviando, setEnviando] = useState(false);
-    const [enviado, setEnviado] = useState(false);
     const [revisando, setRevisando] = useState(false);
     const [error, setError] = useState("");
 
@@ -76,7 +76,7 @@ function Carrito() {
         setError("");
 
         try {
-            await crearPedido({
+            const pedido = await crearPedido({
                 nombre_cliente: nombre,
                 telefono_cliente: telefono,
                 direccion: direccion.trim(),
@@ -97,7 +97,8 @@ function Carrito() {
             setTelefono("");
             setDireccion("");
             setRevisando(false);
-            setEnviado(true);
+
+            navegar("/pedido-confirmado", { state: { pedido } });
         } catch (err) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const axiosError = err as any;
@@ -125,17 +126,7 @@ function Carrito() {
 
                 <h1 className="carrito-titulo">Mi carrito</h1>
 
-                {enviado ? (
-                    <div className="carrito-vacio carrito-exito">
-                        <FaCheckCircle className="carrito-exito-icono" />
-                        <h2>¡Pedido enviado!</h2>
-                        <p>
-                            Tu pedido llegó a la tienda. Te contactarán a tu
-                            teléfono para confirmarlo. Coordinaremos el envío.
-                        </p>
-                        <Link to="/" className="carrito-vacio-btn">Seguir comprando</Link>
-                    </div>
-                ) : revisando ? (
+                {revisando ? (
                     <div className="carrito-revision">
                         <div className="carrito-revision-cab">
                             <h2>Revisá tu pedido</h2>
