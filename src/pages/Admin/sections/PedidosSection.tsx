@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Swal from "sweetalert2";
 
-import { FaSearch, FaTimes, FaWhatsapp, FaMapMarkerAlt, FaTrash } from "react-icons/fa";
+import { FaSearch, FaTimes, FaWhatsapp, FaMapMarkerAlt, FaTrash, FaEye } from "react-icons/fa";
 
 import {
     actualizarEstadoPedido,
@@ -51,6 +51,50 @@ const escaparHtml = (texto: string) =>
 function PedidosSection({ pedidos, onRecargar, onNoAutorizado }: Props) {
     const [busqueda, setBusqueda] = useState("");
     const [filtroEstado, setFiltroEstado] = useState("todos");
+
+    const verDetalle = async (pedido: Pedido) => {
+        const filas = (pedido.productos || [])
+            .map((item) => {
+                const cantidad = Number(item.cantidad || 0);
+                const precio = Number(item.precio || 0);
+                const subtotal = precio * cantidad;
+
+                return (
+                    `<tr style="border-bottom:1px solid #f3ece6">` +
+                    `<td style="padding:7px 6px">${escaparHtml(item.nombre || "Producto")}</td>` +
+                    `<td style="padding:7px 6px">${escaparHtml(item.tono || "No aplica")}</td>` +
+                    `<td style="padding:7px 6px;text-align:center">${cantidad}</td>` +
+                    `<td style="padding:7px 6px;text-align:right">${formatearPrecio(precio)}</td>` +
+                    `<td style="padding:7px 6px;text-align:right">${formatearPrecio(subtotal)}</td>` +
+                    `</tr>`
+                );
+            })
+            .join("");
+
+        await Swal.fire({
+            title: `Pedido #${pedido.id_pedido}`,
+            width: 720,
+            html:
+                `<div style="text-align:left;font-size:13px;line-height:1.6;color:#3A1F24">` +
+                `<p><strong>Cliente:</strong> ${escaparHtml(pedido.nombre_cliente || "—")}</p>` +
+                `<p><strong>Teléfono:</strong> ${escaparHtml(pedido.telefono_cliente || "—")}</p>` +
+                `<p><strong>Dirección:</strong> ${escaparHtml(pedido.direccion || "—")}</p>` +
+                `<p><strong>Fecha:</strong> ${escaparHtml(formatearFecha(pedido.fecha || ""))}</p>` +
+                `<p><strong>Estado:</strong> ${escaparHtml(ESTADOS[pedido.estado || ""] || pedido.estado || "—")}</p>` +
+                `<table style="width:100%;border-collapse:collapse;margin-top:10px">` +
+                `<thead><tr style="text-align:left;border-bottom:1px solid #e8ddd3">` +
+                `<th style="padding:6px">Descripción</th>` +
+                `<th style="padding:6px">Tono</th>` +
+                `<th style="padding:6px;text-align:center">Cant.</th>` +
+                `<th style="padding:6px;text-align:right">P. Unit</th>` +
+                `<th style="padding:6px;text-align:right">Subtotal</th>` +
+                `</tr></thead><tbody>${filas}</tbody></table>` +
+                `<p style="text-align:right;margin-top:12px"><strong>Total: ${formatearPrecio(pedido.total)}</strong></p>` +
+                `</div>`,
+            confirmButtonText: "Cerrar",
+            confirmButtonColor: "#701522",
+        });
+    };
 
     const abrirEnlace = (url: string) => {
         window.open(url, "_blank", "noopener,noreferrer");
@@ -308,13 +352,42 @@ function PedidosSection({ pedidos, onRecargar, onNoAutorizado }: Props) {
                                                 )}
                                             </td>
                                             <td>
-                                                <ul className="pedido-productos">
-                                                    {(pedido.productos || []).map((item, i) => (
-                                                        <li key={i}>
-                                                            {item.nombre} × {item.cantidad}
-                                                        </li>
-                                                    ))}
-                                                </ul>
+                                                <table className="pedido-recibo">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Descripción</th>
+                                                            <th>Tono</th>
+                                                            <th className="recibo-centro">Cant.</th>
+                                                            <th className="recibo-derecha">P. Unit</th>
+                                                            <th className="recibo-derecha">Subtotal</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {(pedido.productos || []).map((item, i) => {
+                                                            const cantidad = Number(item.cantidad || 0);
+                                                            const precio = Number(item.precio || 0);
+                                                            const subtotal = precio * cantidad;
+
+                                                            return (
+                                                                <tr key={i}>
+                                                                    <td className="recibo-desc">
+                                                                        {item.nombre || "Producto"}
+                                                                    </td>
+                                                                    <td>{item.tono || "No aplica"}</td>
+                                                                    <td className="recibo-centro">
+                                                                        {cantidad}
+                                                                    </td>
+                                                                    <td className="recibo-derecha">
+                                                                        {formatearPrecio(precio)}
+                                                                    </td>
+                                                                    <td className="recibo-derecha">
+                                                                        {formatearPrecio(subtotal)}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
                                             </td>
                                             <td className="pedido-total">
                                                 {formatearPrecio(pedido.total)}
@@ -335,6 +408,14 @@ function PedidosSection({ pedidos, onRecargar, onNoAutorizado }: Props) {
                                                 </select>
                                             </td>
                                             <td className="acciones">
+                                                <button
+                                                    type="button"
+                                                    className="accion-ver"
+                                                    onClick={() => verDetalle(pedido)}
+                                                    title="Ver detalle del pedido"
+                                                >
+                                                    <FaEye />
+                                                </button>
                                                 {pedido.telefono_cliente && (
                                                     <a
                                                         href={enlaceWhatsAppPedido(pedido) || "#"}

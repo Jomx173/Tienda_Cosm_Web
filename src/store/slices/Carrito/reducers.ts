@@ -41,9 +41,10 @@ export default CreateReducer(INIT, ({ addCase }) => {
             id_producto: idProductoReal,
             id_variante: idVariante,
             tono: payload.variante?.tono ?? null,
+            color: payload.variante?.color ?? null,
             nombre: payload.producto.nombre,
             precio,
-            imagen: payload.producto.imagen || "",
+            imagen: payload.variante?.imagen || payload.producto.imagen || "",
             cantidad,
             stock: stock === undefined || stock === null ? undefined : Number(stock),
         };

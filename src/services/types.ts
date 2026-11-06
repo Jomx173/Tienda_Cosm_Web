@@ -70,8 +70,10 @@ export type ItemPedido = {
     id_producto?: number;
     id_variante?: number | null;
     tono?: string | null;
-    codigo?: string | null;
+    color?: string | null;
     nombre?: string;
+    imagen?: string | null;
+    codigo?: string | null;
     precio?: number | string;
     cantidad?: number;
 };
@@ -107,6 +109,7 @@ export type ItemCarrito = {
     id_producto: number;
     id_variante: number | null;
     tono: string | null;
+    color?: string | null;
     nombre: string;
     precio: number | string;
     imagen?: string;

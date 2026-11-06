@@ -84,6 +84,8 @@ function Carrito() {
                     id_producto: item.id_producto,
                     id_variante: item.id_variante,
                     tono: item.tono,
+                    color: item.color ?? null,
+                    imagen: item.imagen || null,
                     nombre: item.nombre,
                     precio: item.precio,
                     cantidad: item.cantidad,

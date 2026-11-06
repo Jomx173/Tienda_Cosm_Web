@@ -21,6 +21,8 @@ export type ProductoCarrito = {
 export type VarianteCarrito = {
     id_variante: number;
     tono: string;
+    color?: string | null;
+    imagen?: string | null;
     precio?: number | string;
     stock?: number;
 };

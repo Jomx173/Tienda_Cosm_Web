@@ -250,6 +250,11 @@ function ProductoDetalle() {
                     ? {
                         id_variante: varianteActual.id_variante,
                         tono: varianteActual.tono,
+                        color: varianteActual.color ?? null,
+                        imagen:
+                            varianteActual.imagenes?.[0]?.imagen ||
+                            producto?.imagen ||
+                            "",
                         precio: varianteActual.precio,
                         stock: Number(varianteActual.stock),
                     }
